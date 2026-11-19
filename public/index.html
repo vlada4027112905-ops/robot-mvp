@@ -4,27 +4,33 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Завод роботов · пульт</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div class="viz-root">
   <header class="top">
     <div class="brand">
-      <h1>Завод роботов</h1>
-      <span class="sub">пульт смены · стратегия «байесовский планировщик»</span>
+      <div class="brand-row">
+        <span class="brand-dot"></span>
+        <h1>Завод роботов</h1>
+      </div>
+      <span class="sub">пульт смены · байесовский планировщик</span>
     </div>
     <div class="controls">
       <label>Прогон
         <select id="runSel"><option value="">— нет прогонов —</option></select>
       </label>
       <span class="sep"></span>
-      <label>Мир <input id="seed" type="number" value="1" min="1" style="width:5em"></label>
+      <label>Мир <input id="seed" type="number" value="1" min="1" style="width:5.2em"></label>
       <label>Стратегия
         <select id="strat">
           <option value="bayes">байесовская (наша)</option>
           <option value="learning">обучающаяся</option>
           <option value="naive">наивная</option>
-          <option value="oracle">оракул (знает покупателей)</option>
+          <option value="oracle">оракул</option>
         </select>
       </label>
       <label>Скорость
@@ -34,11 +40,12 @@
           <option value="0">мгновенно</option>
         </select>
       </label>
-      <button id="simBtn">Запустить симуляцию</button>
+      <button id="simBtn">Запустить</button>
+      <button id="themeBtn" class="icon-btn" type="button" title="Сменить тему">☾</button>
     </div>
   </header>
 
-  <p class="hint" id="hint">Прогоны арены и песочницы появляются здесь автоматически. Для локальной проверки выберите номер мира и нажмите «Запустить симуляцию».</p>
+  <p class="hint" id="hint">Прогоны арены и песочницы появляются автоматически. Для локальной проверки выберите мир и нажмите «Запустить».</p>
 
   <section class="kpis" id="kpis"></section>
 
@@ -46,7 +53,7 @@
     <button id="playBtn" title="Проиграть смену">▶</button>
     <input id="tick" type="range" min="0" max="0" value="0">
     <span id="tickLbl" class="mono">t = 0</span>
-    <label class="follow"><input type="checkbox" id="follow" checked> следовать за концом</label>
+    <label class="follow"><input type="checkbox" id="follow" checked> следить</label>
   </section>
 
   <section class="grid">
@@ -55,8 +62,10 @@
       <canvas id="cCash" height="220"></canvas>
     </div>
     <div class="card">
-      <h2>Заполненность склада</h2>
-      <div class="legend" id="lgStorage"></div>
+      <div class="card-head">
+        <h2>Склад</h2>
+        <div class="legend" id="lgStorage"></div>
+      </div>
       <canvas id="cStorage" height="196"></canvas>
     </div>
     <div class="card">
@@ -64,15 +73,17 @@
       <canvas id="cMachines" height="220"></canvas>
     </div>
     <div class="card">
-      <h2>Выпуск и продажи роботов (нарастающим итогом)</h2>
-      <div class="legend" id="lgFlow"></div>
+      <div class="card-head">
+        <h2>Выпуск и продажи</h2>
+        <div class="legend" id="lgFlow"></div>
+      </div>
       <canvas id="cFlow" height="196"></canvas>
     </div>
   </section>
 
   <section class="grid">
     <div class="card">
-      <h2>Состояние на такте <span id="atT" class="mono"></span></h2>
+      <h2>Состояние на такте <span id="atT" class="mono badge on">0</span></h2>
       <div class="snap">
         <div>
           <h3>Склад</h3>
@@ -87,8 +98,8 @@
       </div>
     </div>
     <div class="card">
-      <h2>Что алгоритм знает о покупателях</h2>
-      <p class="note">Оценка цены за тип робота: среднее и 80%-интервал апостериорного распределения. Жирным — лучший тип для покупателя.</p>
+      <h2>Модель покупателей</h2>
+      <p class="note">Оценка цены: среднее и 80%-интервал. Выделен лучший тип для покупателя.</p>
       <div id="beliefs" class="scroll"></div>
     </div>
   </section>

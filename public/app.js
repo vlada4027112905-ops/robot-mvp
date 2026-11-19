@@ -1,16 +1,15 @@
 // Пульт смены: опрашивает сервис (/ui/runs) и рисует ход производства на canvas.
 (() => {
   const $ = (id) => document.getElementById(id);
-  const root = document.querySelector('.viz-root');
-  const css = (v) => getComputedStyle(root).getPropertyValue(v).trim();
+  const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
   const KIND = [
     { k: 'sheet', name: 'листы', c: '--s1' },
-    { k: 'control', name: 'элементы управления', c: '--s2' },
+    { k: 'control', name: 'управление', c: '--s2' },
     { k: 'body', name: 'корпуса', c: '--s3' },
     { k: 'robot', name: 'роботы', c: '--s4' },
   ];
   const COLOR_RU = { red: 'красный', green: 'зелёный', blue: 'синий' };
-  const ROBOT_DOT = { red: '#d93a3a', green: '#2f9e44', blue: '#2f6fdb' };
+  const ROBOT_DOT = { red: '#ef4444', green: '#10b981', blue: '#3b82f6' };
   const fmt = (x, d = 0) => (x == null || Number.isNaN(x) ? '—' : Number(x).toLocaleString('ru-RU', { minimumFractionDigits: d, maximumFractionDigits: d }));
   const typeName = (p) => (p ? `${COLOR_RU[p.color] || p.color}${p.handles ? ', с ручками' : ', без ручек'}` : '—');
 
@@ -19,6 +18,47 @@
   let tick = 0;
   let playing = null;
   const tip = $('tip');
+
+  // ---------- переключение темы ----------
+  const themeBtn = $('themeBtn');
+  const isDarkNow = () => {
+    const attr = document.documentElement.getAttribute('data-theme');
+    if (attr) return attr === 'dark';
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  };
+  const syncThemeIcon = () => {
+    if (themeBtn) themeBtn.textContent = isDarkNow() ? '☀' : '☾';
+  };
+  try {
+    const saved = localStorage.getItem('factory-theme');
+    if (saved === 'dark' || saved === 'light') document.documentElement.setAttribute('data-theme', saved);
+  } catch {}
+  syncThemeIcon();
+  if (themeBtn) {
+    themeBtn.addEventListener('click', () => {
+      const next = isDarkNow() ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      try { localStorage.setItem('factory-theme', next); } catch {}
+      syncThemeIcon();
+      render();
+    });
+  }
+
+  function rrect(ctx, x, y, w, h, r) {
+    const rr = Math.min(r, w / 2, h / 2);
+    if (ctx.roundRect) {
+      ctx.beginPath();
+      ctx.roundRect(x, y, w, h, rr);
+      return;
+    }
+    ctx.beginPath();
+    ctx.moveTo(x + rr, y);
+    ctx.arcTo(x + w, y, x + w, y + h, rr);
+    ctx.arcTo(x + w, y + h, x, y + h, rr);
+    ctx.arcTo(x, y + h, x, y, rr);
+    ctx.arcTo(x, y, x + w, y, rr);
+    ctx.closePath();
+  }
 
   // ---------- общий каркас графика ----------
   function setup(canvas) {
@@ -48,11 +88,11 @@
 
   function frame(canvas, xMax, yLo, yHi, { left = 52, yFmt = (v) => fmt(v) } = {}) {
     const { ctx, w, h } = setup(canvas);
-    const pad = { l: left, r: 14, t: 20, b: 22 };
+    const pad = { l: left, r: 16, t: 22, b: 24 };
     const yt = niceTicks(yLo, yHi);
     const sx = (t) => pad.l + (t / Math.max(1, xMax)) * (w - pad.l - pad.r);
     const sy = (v) => pad.t + (1 - (v - yt.lo) / (yt.hi - yt.lo)) * (h - pad.t - pad.b);
-    ctx.font = '11px system-ui, sans-serif';
+    ctx.font = '11px Inter, system-ui, sans-serif';
     ctx.fillStyle = css('--text-muted');
     ctx.strokeStyle = css('--grid');
     ctx.lineWidth = 1;
@@ -64,14 +104,14 @@
       ctx.moveTo(pad.l, y);
       ctx.lineTo(w - pad.r, y);
       ctx.stroke();
-      ctx.fillText(yFmt(v), pad.l - 6, y);
+      ctx.fillText(yFmt(v), pad.l - 8, y);
     }
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     const xs = niceTicks(0, xMax, 6).ticks.filter((v) => v <= xMax);
-    for (const v of xs) ctx.fillText(fmt(v), sx(v), h - pad.b + 6);
+    for (const v of xs) ctx.fillText(fmt(v), sx(v), h - pad.b + 7);
     if (yt.lo < 0 && yt.hi > 0) {
-      ctx.strokeStyle = css('--text-muted');
+      ctx.strokeStyle = css('--border-strong');
       ctx.beginPath();
       ctx.moveTo(pad.l, Math.round(sy(0)) + 0.5);
       ctx.lineTo(w - pad.r, Math.round(sy(0)) + 0.5);
@@ -83,14 +123,16 @@
   function cursor(f, t) {
     const { ctx, pad, sx, h } = f;
     const x = Math.round(sx(t)) + 0.5;
-    ctx.strokeStyle = css('--text-secondary');
-    ctx.setLineDash([3, 3]);
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = css('--accent');
+    ctx.globalAlpha = 0.55;
+    ctx.setLineDash([4, 4]);
+    ctx.lineWidth = 1.25;
     ctx.beginPath();
     ctx.moveTo(x, pad.t);
     ctx.lineTo(x, h - pad.b);
     ctx.stroke();
     ctx.setLineDash([]);
+    ctx.globalAlpha = 1;
   }
 
   function hoverable(canvas, getFrame, html) {
@@ -106,7 +148,7 @@
       tip.innerHTML = content;
       tip.hidden = false;
       const tw = tip.offsetWidth;
-      tip.style.left = Math.min(window.innerWidth - tw - 8, e.clientX + 14) + 'px';
+      tip.style.left = Math.min(window.innerWidth - tw - 12, e.clientX + 14) + 'px';
       tip.style.top = e.clientY + 14 + 'px';
     });
     canvas.addEventListener('mouseleave', () => (tip.hidden = true));
@@ -130,24 +172,46 @@
     const hi = Math.max(10, ...vals);
     const f = frame($('cCash'), data.horizon, lo, hi);
     frames.cash = f;
-    const { ctx, sx, sy } = f;
+    const { ctx, sx, sy, pad, h } = f;
+
+    if (s.length > 1) {
+      const grad = ctx.createLinearGradient(0, pad.t, 0, h - pad.b);
+      grad.addColorStop(0, css('--s1') + '38');
+      grad.addColorStop(1, css('--s1') + '00');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      s.forEach((p, i) => (i ? ctx.lineTo(sx(p.t), sy(p.cash)) : ctx.moveTo(sx(p.t), sy(p.cash))));
+      ctx.lineTo(sx(s[s.length - 1].t), h - pad.b);
+      ctx.lineTo(sx(s[0].t), h - pad.b);
+      ctx.closePath();
+      ctx.fill();
+    }
+
     ctx.strokeStyle = css('--s1');
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 2.4;
     ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
     ctx.beginPath();
     s.forEach((p, i) => (i ? ctx.lineTo(sx(p.t), sy(p.cash)) : ctx.moveTo(sx(p.t), sy(p.cash))));
     ctx.stroke();
+
     const last = s[s.length - 1];
     if (last) {
+      const lx = sx(last.t);
+      const ly = sy(last.cash);
+      ctx.fillStyle = css('--s1') + '33';
+      ctx.beginPath();
+      ctx.arc(lx, ly, 8, 0, Math.PI * 2);
+      ctx.fill();
       ctx.fillStyle = css('--s1');
       ctx.beginPath();
-      ctx.arc(sx(last.t), sy(last.cash), 4, 0, Math.PI * 2);
+      ctx.arc(lx, ly, 4, 0, Math.PI * 2);
       ctx.fill();
       ctx.fillStyle = css('--text-primary');
-      ctx.font = '600 12px system-ui';
+      ctx.font = '600 12px Inter, system-ui';
       ctx.textAlign = 'right';
       ctx.textBaseline = 'bottom';
-      ctx.fillText(fmt(last.cash), sx(last.t) - 6, sy(last.cash) - 4);
+      ctx.fillText(fmt(last.cash), lx - 9, ly - 5);
     }
     cursor(f, tick);
   }
@@ -161,6 +225,7 @@
     for (const K of KIND) {
       const top = s.map((p, i) => acc[i] + (p.kinds[K.k] || 0));
       ctx.fillStyle = css(K.c);
+      ctx.globalAlpha = 0.85;
       ctx.beginPath();
       s.forEach((p, i) => {
         const x0 = sx(p.t);
@@ -175,10 +240,11 @@
       }
       ctx.closePath();
       ctx.fill();
+      ctx.globalAlpha = 1;
       top.forEach((v, i) => (acc[i] = v));
     }
-    ctx.strokeStyle = css('--text-primary');
-    ctx.setLineDash([5, 4]);
+    ctx.strokeStyle = css('--text-muted');
+    ctx.setLineDash([5, 5]);
     ctx.lineWidth = 1;
     const cy = Math.round(sy(data.capacity)) + 0.5;
     ctx.beginPath();
@@ -186,10 +252,11 @@
     ctx.lineTo(f.w - f.pad.r, cy);
     ctx.stroke();
     ctx.setLineDash([]);
-    ctx.fillStyle = css('--text-secondary');
+    ctx.fillStyle = css('--text-muted');
+    ctx.font = '11px Inter, system-ui';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'bottom';
-    ctx.fillText(`вместимость ${data.capacity}`, f.pad.l + 4, cy - 2);
+    ctx.fillText(`лимит ${data.capacity}`, f.pad.l + 4, cy - 3);
     cursor(f, tick);
   }
 
@@ -205,7 +272,9 @@
     ];
     for (const [k, c] of lines) {
       ctx.strokeStyle = css(c);
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 2.4;
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
       ctx.beginPath();
       s.forEach((p, i) => (i ? ctx.lineTo(sx(p.t), sy(p[k])) : ctx.moveTo(sx(p.t), sy(p[k]))));
       ctx.stroke();
@@ -216,16 +285,21 @@
   function drawMachines() {
     const canvas = $('cMachines');
     const { ctx, w, h } = setup(canvas);
-    const pad = { l: 92, r: 52, t: 6, b: 22 };
+    const pad = { l: 92, r: 52, t: 8, b: 24 };
     const ms = data.machines;
     const rowH = (h - pad.t - pad.b) / Math.max(1, ms.length);
     const sx = (t) => pad.l + (t / Math.max(1, data.horizon)) * (w - pad.l - pad.r);
     frames.machines = { pad, sx, w, h, ctx, rowH };
-    ctx.font = '12px system-ui';
+    ctx.font = '12px Inter, system-ui';
     ms.forEach((m, i) => {
       const y = pad.t + i * rowH;
+      const barY = y + rowH * 0.24;
+      const barH = rowH * 0.52;
+      const r = barH / 2;
       ctx.fillStyle = css('--grid');
-      ctx.fillRect(pad.l, y + rowH * 0.2, w - pad.l - pad.r, rowH * 0.6);
+      rrect(ctx, pad.l, barY, w - pad.l - pad.r, barH, r);
+      ctx.fill();
+
       ctx.fillStyle = css('--s1');
       const arr = data.busy[m] || [];
       let k = 0;
@@ -236,23 +310,26 @@
         }
         let j = k;
         while (j < arr.length && arr[j]) j++;
-        ctx.fillRect(sx(k), y + rowH * 0.2, Math.max(1, sx(j) - sx(k) - 0.5), rowH * 0.6);
+        const bw = Math.max(2, sx(j) - sx(k) - 0.5);
+        rrect(ctx, sx(k), barY, bw, barH, Math.min(5, bw / 2, barH / 2));
+        ctx.fill();
         k = j;
       }
-      ctx.fillStyle = css('--text-primary');
+      ctx.fillStyle = css('--text-secondary');
+      ctx.font = '500 12px "JetBrains Mono", ui-monospace, monospace';
       ctx.textAlign = 'right';
       ctx.textBaseline = 'middle';
-      ctx.fillText(m, pad.l - 8, y + rowH / 2);
+      ctx.fillText(m, pad.l - 10, y + rowH / 2);
+      ctx.fillStyle = css('--text-primary');
       ctx.textAlign = 'left';
-      ctx.font = '600 12px system-ui';
-      ctx.fillText(`${Math.round((data.util[m] || 0) * 100)}%`, w - pad.r + 8, y + rowH / 2);
-      ctx.font = '12px system-ui';
+      ctx.font = '600 12px Inter, system-ui';
+      ctx.fillText(`${Math.round((data.util[m] || 0) * 100)}%`, w - pad.r + 10, y + rowH / 2);
     });
     ctx.fillStyle = css('--text-muted');
-    ctx.font = '11px system-ui';
+    ctx.font = '11px Inter, system-ui';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-    for (const v of niceTicks(0, data.horizon, 6).ticks.filter((v) => v <= data.horizon)) ctx.fillText(fmt(v), sx(v), h - pad.b + 6);
+    for (const v of niceTicks(0, data.horizon, 6).ticks.filter((v) => v <= data.horizon)) ctx.fillText(fmt(v), sx(v), h - pad.b + 7);
     cursor({ ctx, pad, sx, h }, tick);
   }
 
@@ -267,20 +344,22 @@
     const last = data.series[data.series.length - 1] || {};
     const avg = s.sold ? s.revenue / s.sold : 0;
     const items = [
-      ['Прибыль', fmt(data.finish?.profit ?? last.cash, 1), data.done ? 'смена завершена' : `идёт: t = ${data.t} из ${data.horizon}`],
-      ['Выпущено роботов', fmt(s.produced), `принято заготовок: ${fmt(s.accepted)}`],
+      ['Прибыль', fmt(data.finish?.profit ?? last.cash, 1), data.done ? 'смена завершена' : `t = ${data.t} из ${data.horizon}`, true],
+      ['Выпущено', fmt(s.produced), `заготовок: ${fmt(s.accepted)}`],
       ['Продано', fmt(s.sold), `выручка ${fmt(s.revenue)}`],
       ['Средняя цена', fmt(avg, 1), `предложений: ${fmt(s.offers)}`],
-      ['Отказы покупателей', fmt(s.refused), s.sold + s.refused ? `${Math.round((100 * s.refused) / (s.sold + s.refused))}% предложений` : ''],
-      ['Недопустимые команды', fmt(s.invalid), Object.entries(s.invalidReasons).map(([k, v]) => `${k}: ${v}`).join(', ') || 'нет'],
-      ['Время ответа', `${fmt(s.maxLatencyMs, 1)} мс`, `среднее ${fmt(s.avgLatencyMs, 2)} мс, событий ${fmt(s.events)}`],
+      ['Отказы', fmt(s.refused), s.sold + s.refused ? `${Math.round((100 * s.refused) / (s.sold + s.refused))}% предложений` : 'пока нет'],
+      ['Ошибки API', fmt(s.invalid), Object.entries(s.invalidReasons).map(([k, v]) => `${k}: ${v}`).join(', ') || 'без ошибок'],
+      ['Отклик', `${fmt(s.maxLatencyMs, 1)} мс`, `среднее ${fmt(s.avgLatencyMs, 2)} мс`],
     ];
-    $('kpis').innerHTML = items.map(([l, v, sub]) => `<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${sub}</div></div>`).join('');
+    $('kpis').innerHTML = items
+      .map(([l, v, sub, main]) => `<div class="kpi${main ? ' kpi-main' : ''}"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${sub}</div></div>`)
+      .join('');
   }
 
   function snapshot() {
     const p = data.series[Math.min(tick, data.series.length - 1)];
-    $('atT').textContent = p ? p.t : '';
+    $('atT').textContent = p ? p.t : '0';
     $('tickLbl').textContent = `t = ${p ? p.t : 0}`;
     if (!p) return;
     const cells = [];
@@ -296,7 +375,7 @@
       if (it.k === 'robot') label = 'робот';
       if (it.k === 'sheet') label = 'лист';
       if (it.k === 'control') label = 'упр.';
-      cells.push(`<div class="cell full" style="border-color:${col};box-shadow:inset 0 -4px 0 ${col}" title="${it.k}${it.c ? ', ' + it.c : ''}${it.h ? ', ручки' : ''}">${dot}<span>${label}${it.h ? ' ⊓' : ''}</span></div>`);
+      cells.push(`<div class="cell full" style="--c:${col}" title="${it.k}${it.c ? ', ' + it.c : ''}${it.h ? ', ручки' : ''}">${dot}<span>${label}${it.h ? ' ⊓' : ''}</span></div>`);
     }
     for (let i = 0; i < busyNow; i++) cells.push('<div class="cell reserved">резерв</div>');
     while (cells.length < (data.capacity || 12)) cells.push('<div class="cell"></div>');
@@ -305,7 +384,7 @@
       .map((m) => {
         const bu = p.busyUntil?.[m];
         const on = bu != null && bu > p.t;
-        return `<div class="row"><span class="mono">${m}</span><span class="badge ${on ? 'on' : ''}">${on ? `работает до ${bu}` : 'свободен'}</span></div>`;
+        return `<div class="row"><span class="mono">${m}</span><span class="badge ${on ? 'on' : ''}">${on ? `до t=${bu}` : 'свободен'}</span></div>`;
       })
       .join('');
     $('bstate').innerHTML = (p.buyers || [])
@@ -359,11 +438,11 @@
       $('sales').innerHTML = '<p class="note">Сделок пока нет.</p>';
       return;
     }
-    const why = { below_min_price: 'цена ниже minPrice', cooldown: 'пауза покупателя' };
+    const why = { below_min_price: 'ниже minPrice', cooldown: 'пауза' };
     $('sales').innerHTML =
       '<table><thead><tr><th>Такт</th><th>Покупатель</th><th>Робот</th><th>Итог</th><th>Цена</th></tr></thead><tbody>' +
       rows
-        .map((r) => `<tr><td>${r.t}</td><td>${r.buyerId}</td><td><span class="sw" style="background:${ROBOT_DOT[r.props?.color] || '#999'}"></span>${typeName(r.props)}</td><td class="${r.outcome === 'sold' ? 'ok' : 'no'}">${r.outcome === 'sold' ? 'продан' : 'отказ: ' + (why[r.reason] || r.reason || '')}</td><td>${r.price != null ? fmt(r.price, 2) : ''}</td></tr>`)
+        .map((r) => `<tr><td class="mono">${r.t}</td><td class="mono">${r.buyerId}</td><td><span class="sw" style="background:${ROBOT_DOT[r.props?.color] || '#999'}"></span>${typeName(r.props)}</td><td><span class="${r.outcome === 'sold' ? 'pill-ok' : 'pill-no'}">${r.outcome === 'sold' ? 'продан' : 'отказ · ' + (why[r.reason] || r.reason || '')}</span></td><td class="mono">${r.price != null ? fmt(r.price, 2) : '—'}</td></tr>`)
         .join('') +
       '</tbody></table>';
   }
@@ -486,7 +565,10 @@
     }, 30);
   });
   window.addEventListener('resize', render);
-  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', render);
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    syncThemeIcon();
+    render();
+  });
 
   loadRuns();
   setInterval(loadRuns, 2000);
