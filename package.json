@@ -1,0 +1,1 @@
+{"name":"factory-robots","version":"1.0.0","type":"module","private":true,"description":"Завод роботов: сервис-стратегия по спецификации арены v1, эмулятор и интерфейс","scripts":{"start":"node server.mjs","bench":"node cli.mjs --seeds 20","test":"node test/check.mjs"},"engines":{"node":">=18"}}

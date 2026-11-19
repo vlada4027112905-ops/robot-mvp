@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Завод роботов · пульт</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="viz-root">
+  <header class="top">
+    <div class="brand">
+      <h1>Завод роботов</h1>
+      <span class="sub">пульт смены · стратегия «байесовский планировщик»</span>
+    </div>
+    <div class="controls">
+      <label>Прогон
+        <select id="runSel"><option value="">— нет прогонов —</option></select>
+      </label>
+      <span class="sep"></span>
+      <label>Мир <input id="seed" type="number" value="1" min="1" style="width:5em"></label>
+      <label>Стратегия
+        <select id="strat">
+          <option value="bayes">байесовская (наша)</option>
+          <option value="learning">обучающаяся</option>
+          <option value="naive">наивная</option>
+          <option value="oracle">оракул (знает покупателей)</option>
+        </select>
+      </label>
+      <label>Скорость
+        <select id="speed">
+          <option value="12">медленно</option>
+          <option value="4" selected>нормально</option>
+          <option value="0">мгновенно</option>
+        </select>
+      </label>
+      <button id="simBtn">Запустить симуляцию</button>
+    </div>
+  </header>
+
+  <p class="hint" id="hint">Прогоны арены и песочницы появляются здесь автоматически. Для локальной проверки выберите номер мира и нажмите «Запустить симуляцию».</p>
+
+  <section class="kpis" id="kpis"></section>
+
+  <section class="player">
+    <button id="playBtn" title="Проиграть смену">▶</button>
+    <input id="tick" type="range" min="0" max="0" value="0">
+    <span id="tickLbl" class="mono">t = 0</span>
+    <label class="follow"><input type="checkbox" id="follow" checked> следовать за концом</label>
+  </section>
+
+  <section class="grid">
+    <div class="card">
+      <h2>Деньги по тактам</h2>
+      <canvas id="cCash" height="220"></canvas>
+    </div>
+    <div class="card">
+      <h2>Заполненность склада</h2>
+      <div class="legend" id="lgStorage"></div>
+      <canvas id="cStorage" height="196"></canvas>
+    </div>
+    <div class="card">
+      <h2>Загрузка станков</h2>
+      <canvas id="cMachines" height="220"></canvas>
+    </div>
+    <div class="card">
+      <h2>Выпуск и продажи роботов (нарастающим итогом)</h2>
+      <div class="legend" id="lgFlow"></div>
+      <canvas id="cFlow" height="196"></canvas>
+    </div>
+  </section>
+
+  <section class="grid">
+    <div class="card">
+      <h2>Состояние на такте <span id="atT" class="mono"></span></h2>
+      <div class="snap">
+        <div>
+          <h3>Склад</h3>
+          <div id="cells" class="cells"></div>
+        </div>
+        <div>
+          <h3>Станки</h3>
+          <div id="mstate"></div>
+          <h3>Покупатели</h3>
+          <div id="bstate"></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Что алгоритм знает о покупателях</h2>
+      <p class="note">Оценка цены за тип робота: среднее и 80%-интервал апостериорного распределения. Жирным — лучший тип для покупателя.</p>
+      <div id="beliefs" class="scroll"></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Журнал сделок</h2>
+    <div id="sales" class="scroll tall"></div>
+  </section>
+  <div id="tip" class="tip" hidden></div>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
