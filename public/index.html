@@ -1,115 +1,275 @@
 <!doctype html>
-<html lang="ru">
+<html lang="ru" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Завод роботов · пульт</title>
+<title>Завод роботов — Панель управления</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="viz-root">
-  <header class="top">
+<div class="layout">
+  <!-- Боковая панель навигации и запуска симуляций -->
+  <aside class="sidebar">
     <div class="brand">
-      <div class="brand-row">
-        <span class="brand-dot"></span>
-        <h1>Завод роботов</h1>
+      <div class="brand-logo" aria-hidden="true">
+        <span></span>
       </div>
-      <span class="sub">пульт смены · байесовский планировщик</span>
-    </div>
-    <div class="controls">
-      <label>Прогон
-        <select id="runSel"><option value="">— нет прогонов —</option></select>
-      </label>
-      <span class="sep"></span>
-      <label>Мир <input id="seed" type="number" value="1" min="1" style="width:5.2em"></label>
-      <label>Стратегия
-        <select id="strat">
-          <option value="bayes">байесовская (наша)</option>
-          <option value="learning">обучающаяся</option>
-          <option value="naive">наивная</option>
-          <option value="oracle">оракул</option>
-        </select>
-      </label>
-      <label>Скорость
-        <select id="speed">
-          <option value="12">медленно</option>
-          <option value="4" selected>нормально</option>
-          <option value="0">мгновенно</option>
-        </select>
-      </label>
-      <button id="simBtn">Запустить</button>
-      <button id="themeBtn" class="icon-btn" type="button" title="Сменить тему">☾</button>
-    </div>
-  </header>
-
-  <p class="hint" id="hint">Прогоны арены и песочницы появляются автоматически. Для локальной проверки выберите мир и нажмите «Запустить».</p>
-
-  <section class="kpis" id="kpis"></section>
-
-  <section class="player">
-    <button id="playBtn" title="Проиграть смену">▶</button>
-    <input id="tick" type="range" min="0" max="0" value="0">
-    <span id="tickLbl" class="mono">t = 0</span>
-    <label class="follow"><input type="checkbox" id="follow" checked> следить</label>
-  </section>
-
-  <section class="grid">
-    <div class="card">
-      <h2>Деньги по тактам</h2>
-      <canvas id="cCash" height="220"></canvas>
-    </div>
-    <div class="card">
-      <div class="card-head">
-        <h2>Склад</h2>
-        <div class="legend" id="lgStorage"></div>
+      <div>
+        <div class="brand-name">Завод роботов</div>
+        <div class="brand-sub">Байесовский планировщик</div>
       </div>
-      <canvas id="cStorage" height="196"></canvas>
     </div>
-    <div class="card">
-      <h2>Загрузка станков</h2>
-      <canvas id="cMachines" height="220"></canvas>
-    </div>
-    <div class="card">
-      <div class="card-head">
-        <h2>Выпуск и продажи</h2>
-        <div class="legend" id="lgFlow"></div>
-      </div>
-      <canvas id="cFlow" height="196"></canvas>
-    </div>
-  </section>
 
-  <section class="grid">
-    <div class="card">
-      <h2>Состояние на такте <span id="atT" class="mono badge on">0</span></h2>
-      <div class="snap">
-        <div>
-          <h3>Склад</h3>
-          <div id="cells" class="cells"></div>
+    <div class="sb-section">
+      <div class="sb-caption">Разделы</div>
+      <nav class="nav" id="mainNav" aria-label="Основная навигация">
+        <button type="button" class="nav-item active" data-view="overview">
+          <span class="nav-icon">◧</span>
+          <span class="nav-text">Обзор и графики</span>
+        </button>
+        <button type="button" class="nav-item" data-view="floor">
+          <span class="nav-icon">◫</span>
+          <span class="nav-text">Состояние цеха</span>
+          <span class="nav-badge mono" id="navTickBadge">t=0</span>
+        </button>
+        <button type="button" class="nav-item" data-view="model">
+          <span class="nav-icon">◎</span>
+          <span class="nav-text">Модель покупателей</span>
+        </button>
+        <button type="button" class="nav-item" data-view="sales">
+          <span class="nav-icon">≡</span>
+          <span class="nav-text">Журнал сделок</span>
+          <span class="nav-badge mono" id="navSalesBadge">0</span>
+        </button>
+      </nav>
+    </div>
+
+    <div class="sb-section">
+      <div class="sb-caption">Управление прогоном</div>
+      <div class="controls">
+        <label class="field">
+          <span>Текущий прогон</span>
+          <select id="runSel">
+            <option value="">— нет прогонов —</option>
+          </select>
+        </label>
+
+        <div class="field-row">
+          <label class="field">
+            <span>Мир (seed)</span>
+            <input id="seed" type="number" value="1" min="1">
+          </label>
+          <label class="field">
+            <span>Скорость</span>
+            <select id="speed">
+              <option value="12">Медленно</option>
+              <option value="4" selected>Обычная</option>
+              <option value="0">Мгновенно</option>
+            </select>
+          </label>
         </div>
-        <div>
-          <h3>Станки</h3>
-          <div id="mstate"></div>
-          <h3>Покупатели</h3>
-          <div id="bstate"></div>
+
+        <label class="field">
+          <span>Стратегия</span>
+          <select id="strat">
+            <option value="bayes">Байесовская (основная)</option>
+            <option value="learning">Обучающаяся</option>
+            <option value="naive">Наивная</option>
+            <option value="oracle">Оракул</option>
+          </select>
+        </label>
+
+        <button id="simBtn" class="btn-primary" type="button">Запустить симуляцию</button>
+      </div>
+    </div>
+
+    <div class="sb-footer">
+      <div class="status-card">
+        <div class="status-row">
+          <span class="status-dot" id="liveDot"></span>
+          <span class="status-label" id="statusText">Ожидание прогона</span>
+        </div>
+        <div class="status-meta mono" id="statusMeta">нет активных данных</div>
+        <div class="status-progress">
+          <div class="status-progress-fill" id="statusBar" style="width:0%"></div>
         </div>
       </div>
     </div>
-    <div class="card">
-      <h2>Модель покупателей</h2>
-      <p class="note">Оценка цены: среднее и 80%-интервал. Выделен лучший тип для покупателя.</p>
-      <div id="beliefs" class="scroll"></div>
-    </div>
-  </section>
+  </aside>
 
-  <section class="card">
-    <h2>Журнал сделок</h2>
-    <div id="sales" class="scroll tall"></div>
-  </section>
-  <div id="tip" class="tip" hidden></div>
+  <!-- Рабочая область -->
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="crumbs">
+          <span class="crumb-muted">Смена</span>
+          <span class="crumb-sep">/</span>
+          <span class="crumb-active" id="viewTitle">Обзор и графики</span>
+        </div>
+        <span class="run-pill mono" id="bcRun">нет прогона</span>
+      </div>
+      <div class="topbar-right">
+        <span class="sync-indicator mono" id="syncLbl">синхронизация…</span>
+        <button id="themeBtn" class="btn-ghost" type="button" title="Сменить оформление">Тёмная тема</button>
+      </div>
+    </header>
+
+    <div class="container">
+      <!-- Уведомление при пустом списке прогонов -->
+      <div class="empty-banner" id="hint">
+        Прогоны арены и песочницы загружаются автоматически. Для локальной проверки укажите номер мира в панели слева и нажмите «Запустить симуляцию».
+      </div>
+
+      <!-- Сквозная панель воспроизведения тактов (активна в разделах Обзор и Цех) -->
+      <section class="timeline-bar" id="timelineBar">
+        <button id="playBtn" class="play-btn" type="button" title="Проиграть смену">▶</button>
+        <div class="timeline-slider">
+          <input id="tick" type="range" min="0" max="0" value="0">
+        </div>
+        <span id="tickLbl" class="tick-pill mono">t = 0</span>
+        <label class="follow-check">
+          <input type="checkbox" id="follow" checked>
+          <span>Следить</span>
+        </label>
+      </section>
+
+      <!-- РАЗДЕЛ 1: ОБЗОР И ГРАФИКИ -->
+      <div class="view active" id="view-overview">
+        <div class="section-head">
+          <div>
+            <div class="kicker mono">01 / TELEMETRY</div>
+            <h1>Показатели смены</h1>
+          </div>
+          <div class="metric-chips" id="subChips"></div>
+        </div>
+
+        <section class="kpi-grid" id="kpis"></section>
+
+        <section class="charts-grid">
+          <article class="card">
+            <div class="card-head">
+              <h2>Деньги по тактам</h2>
+              <span class="card-tag mono" id="cashTag">—</span>
+            </div>
+            <canvas id="cCash" height="224"></canvas>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <h2>Заполненность склада</h2>
+              <div class="legend" id="lgStorage"></div>
+            </div>
+            <canvas id="cStorage" height="224"></canvas>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <h2>Загрузка станков</h2>
+              <span class="card-tag mono">за смену</span>
+            </div>
+            <canvas id="cMachines" height="224"></canvas>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <h2>Выпуск и продажи</h2>
+              <div class="legend" id="lgFlow"></div>
+            </div>
+            <canvas id="cFlow" height="224"></canvas>
+          </article>
+        </section>
+      </div>
+
+      <!-- РАЗДЕЛ 2: СОСТОЯНИЕ ЦЕХА -->
+      <div class="view" id="view-floor">
+        <div class="section-head">
+          <div>
+            <div class="kicker mono">02 / LIVE FLOOR</div>
+            <h1>Состояние цеха на такте <span id="atT" class="mono accent-num">0</span></h1>
+          </div>
+          <div class="floor-summary mono" id="floorSummary">Склад: 0 / 0</div>
+        </div>
+
+        <section class="floor-grid">
+          <article class="card">
+            <div class="card-head">
+              <h2>Ячейки склада</h2>
+              <div class="legend" id="lgFloor"></div>
+            </div>
+            <div id="cells" class="cells"></div>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <h2>Станки</h2>
+              <span class="card-tag mono" id="machinesSummary">—</span>
+            </div>
+            <div id="mstate" class="state-list"></div>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <h2>Покупатели</h2>
+              <span class="card-tag mono" id="buyersSummary">—</span>
+            </div>
+            <div id="bstate" class="state-list"></div>
+          </article>
+        </section>
+      </div>
+
+      <!-- РАЗДЕЛ 3: МОДЕЛЬ ПОКУПАТЕЛЕЙ -->
+      <div class="view" id="view-model">
+        <div class="section-head">
+          <div>
+            <div class="kicker mono">03 / BAYESIAN BELIEFS</div>
+            <h1>Модель покупателей</h1>
+          </div>
+          <p class="head-note">Оценка цены (среднее и 80%-интервал) с прогресс-баром относительно Pmax. Подсвечен оптимальный тип для каждого покупателя.</p>
+        </div>
+
+        <article class="card">
+          <div id="beliefs" class="table-wrap"></div>
+        </article>
+      </div>
+
+      <!-- РАЗДЕЛ 4: ЖУРНАЛ СДЕЛОК -->
+      <div class="view" id="view-sales">
+        <div class="section-head">
+          <div>
+            <div class="kicker mono">04 / TRANSACTIONS</div>
+            <h1>Журнал сделок <span class="title-count mono" id="salesCount">0</span></h1>
+          </div>
+          <div class="sales-toolbar">
+            <select id="fBuyer" class="tool-select">
+              <option value="">Все покупатели</option>
+            </select>
+            <select id="fRobot" class="tool-select">
+              <option value="">Все типы роботов</option>
+            </select>
+            <div class="segmented" id="fOutcome" role="group" aria-label="Фильтр по результату">
+              <button type="button" class="seg active" data-val="">Все</button>
+              <button type="button" class="seg" data-val="sold">Продано</button>
+              <button type="button" class="seg" data-val="refused">Отказы</button>
+            </div>
+            <button id="csvBtn" class="btn-ghost mono" type="button">Экспорт CSV</button>
+          </div>
+        </div>
+
+        <article class="card">
+          <div id="sales" class="table-wrap"></div>
+          <div class="sales-foot" id="salesFoot" hidden>
+            <button id="toggleSalesBtn" class="btn-ghost" type="button">Показать все записи</button>
+          </div>
+        </article>
+      </div>
+    </div>
+  </div>
 </div>
+
+<div id="tip" class="tip mono" hidden></div>
 <script src="app.js"></script>
 </body>
 </html>
