@@ -10,14 +10,8 @@
     { k: 'robot', name: 'роботы', c: '--s4' },
   ];
   const COLOR_RU = { red: 'красный', green: 'зелёный', blue: 'синий' };
-  const ROBOT_DOT = { red: '#e11d48', green: '#059669', blue: '#2563eb' };
+  const ROBOT_DOT = { red: '#ff3b00', green: '#009957', blue: '#0047ff' };
   const WHY_RU = { below_min_price: 'ниже minPrice', cooldown: 'пауза' };
-  const VIEW_TITLES = {
-    overview: 'Обзор и графики',
-    floor: 'Состояние цеха',
-    model: 'Модель покупателей',
-    sales: 'Журнал сделок',
-  };
 
   const fmt = (x, d = 0) =>
     x == null || Number.isNaN(x)
@@ -34,7 +28,7 @@
   let activeView = 'overview';
   let lastSyncAt = 0;
 
-  // Фильтры и отображение журнала сделок
+  // Состояние фильтров журнала сделок
   let salesExpanded = false;
   let filterBuyer = '';
   let filterRobot = '';
@@ -45,14 +39,14 @@
   const tip = $('tip');
   const frames = {};
 
-  // ---------- Переключение темы (по умолчанию светлая) ----------
+  // ---------- Переключение темы (светлая по умолчанию) ----------
   const themeBtn = $('themeBtn');
   const syncThemeBtn = () => {
     const cur = document.documentElement.getAttribute('data-theme') || 'light';
-    if (themeBtn) themeBtn.textContent = cur === 'light' ? 'Тёмная тема' : 'Светлая тема';
+    if (themeBtn) themeBtn.textContent = cur === 'light' ? 'DARK' : 'LIGHT';
   };
   try {
-    const saved = localStorage.getItem('factory-ui-theme');
+    const saved = localStorage.getItem('factory-studio-theme');
     if (saved === 'light' || saved === 'dark') {
       document.documentElement.setAttribute('data-theme', saved);
     }
@@ -64,29 +58,24 @@
       const cur = document.documentElement.getAttribute('data-theme') || 'light';
       const next = cur === 'light' ? 'dark' : 'light';
       document.documentElement.setAttribute('data-theme', next);
-      try { localStorage.setItem('factory-ui-theme', next); } catch {}
+      try { localStorage.setItem('factory-studio-theme', next); } catch {}
       syncThemeBtn();
-      render();
+      drawAll();
     });
   }
 
-  // ---------- Навигация между разделами ----------
-  function setView(viewName) {
-    if (!VIEW_TITLES[viewName]) return;
-    activeView = viewName;
-    document.querySelectorAll('.nav-item').forEach((btn) => {
-      btn.classList.toggle('active', btn.dataset.view === viewName);
+  // ---------- Навигация по вкладкам ----------
+  function setView(name) {
+    activeView = name;
+    document.querySelectorAll('.tab-btn').forEach((btn) => {
+      btn.classList.toggle('active', btn.dataset.view === name);
     });
     document.querySelectorAll('.view').forEach((sec) => {
-      sec.classList.toggle('active', sec.id === `view-${viewName}`);
+      sec.classList.toggle('active', sec.id === `view-${name}`);
     });
-    $('viewTitle').textContent = VIEW_TITLES[viewName];
+    $('timelineBar').hidden = !(name === 'overview' || name === 'floor');
 
-    // Показываем полосу таймлайна там, где она управляет данными
-    const showTimeline = viewName === 'overview' || viewName === 'floor';
-    $('timelineBar').hidden = !showTimeline;
-
-    if (data && viewName === 'overview') {
+    if (data && name === 'overview') {
       requestAnimationFrame(() => {
         drawCash();
         drawStorage();
@@ -96,7 +85,7 @@
     }
   }
 
-  document.querySelectorAll('.nav-item').forEach((btn) => {
+  document.querySelectorAll('.tab-btn').forEach((btn) => {
     btn.addEventListener('click', () => setView(btn.dataset.view));
   });
 
@@ -109,16 +98,16 @@
       return;
     }
     const sec = Math.max(0, Math.floor((Date.now() - lastSyncAt) / 1000));
-    el.textContent = sec === 0 ? 'обновлено сейчас' : `обновлено ${sec} с назад`;
+    el.textContent = sec === 0 ? 'sync: now' : `sync: ${sec}s`;
   }, 1000);
 
-  // ---------- Вспомогательные функции для графиков ----------
+  // ---------- Каркас графиков ----------
   function setup(canvas) {
     if (!canvas) return null;
     const w = canvas.clientWidth;
     if (!w) return null;
     const dpr = window.devicePixelRatio || 1;
-    const h = Number(canvas.getAttribute('height')) || 224;
+    const h = Number(canvas.getAttribute('height')) || 232;
     if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
       canvas.width = Math.round(w * dpr);
       canvas.height = Math.round(h * dpr);
@@ -144,12 +133,12 @@
     const s = setup(canvas);
     if (!s) return null;
     const { ctx, w, h } = s;
-    const pad = { l: left, r: 16, t: 18, b: 24 };
+    const pad = { l: left, r: 16, t: 22, b: 24 };
     const yt = niceTicks(yLo, yHi);
     const sx = (t) => pad.l + (t / Math.max(1, xMax)) * (w - pad.l - pad.r);
     const sy = (v) => pad.t + (1 - (v - yt.lo) / (yt.hi - yt.lo)) * (h - pad.t - pad.b);
 
-    ctx.font = '11px "JetBrains Mono", monospace';
+    ctx.font = '10.5px "JetBrains Mono", monospace';
     ctx.fillStyle = css('--text-3');
     ctx.strokeStyle = css('--grid');
     ctx.lineWidth = 1;
@@ -172,14 +161,16 @@
 
     // Опорная горизонтальная линия нуля
     if (yt.lo <= 0 && yt.hi >= 0) {
-      ctx.strokeStyle = css('--border-strong');
-      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = css('--ink');
+      ctx.globalAlpha = 0.35;
+      ctx.setLineDash([4, 3]);
       const y0 = Math.round(sy(0)) + 0.5;
       ctx.beginPath();
       ctx.moveTo(pad.l, y0);
       ctx.lineTo(w - pad.r, y0);
       ctx.stroke();
       ctx.setLineDash([]);
+      ctx.globalAlpha = 1;
     }
 
     return { ctx, w, h, pad, sx, sy };
@@ -188,16 +179,17 @@
   function cursor(f, t) {
     const { ctx, pad, sx, h } = f;
     const x = Math.round(sx(t)) + 0.5;
-    ctx.strokeStyle = css('--ink');
-    ctx.globalAlpha = 0.45;
-    ctx.setLineDash([3, 3]);
-    ctx.lineWidth = 1.2;
+    const col = css('--signal');
+    ctx.strokeStyle = col;
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.moveTo(x, pad.t);
+    ctx.moveTo(x, pad.t - 4);
     ctx.lineTo(x, h - pad.b);
     ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.globalAlpha = 1;
+
+    // Верхний маркер курсора
+    ctx.fillStyle = col;
+    ctx.fillRect(x - 3, pad.t - 8, 6, 6);
   }
 
   function hoverable(canvas, getFrame, html) {
@@ -234,7 +226,7 @@
     });
   }
 
-  // ---------- Отрисовка графиков ----------
+  // ---------- Графики ----------
   function drawCash() {
     const s = data.series;
     const vals = s.map((x) => x.cash);
@@ -248,7 +240,7 @@
 
     if (s.length > 1) {
       const grad = ctx.createLinearGradient(0, pad.t, 0, h - pad.b);
-      grad.addColorStop(0, col + '2b');
+      grad.addColorStop(0, col + '2e');
       grad.addColorStop(1, col + '00');
       ctx.fillStyle = grad;
       ctx.beginPath();
@@ -260,7 +252,7 @@
     }
 
     ctx.strokeStyle = col;
-    ctx.lineWidth = 2.2;
+    ctx.lineWidth = 2.4;
     ctx.lineJoin = 'round';
     ctx.beginPath();
     s.forEach((p, i) => (i ? ctx.lineTo(sx(p.t), sy(p.cash)) : ctx.moveTo(sx(p.t), sy(p.cash))));
@@ -271,10 +263,8 @@
       const lx = sx(last.t);
       const ly = sy(last.cash);
       ctx.fillStyle = col;
-      ctx.beginPath();
-      ctx.arc(lx, ly, 4, 0, Math.PI * 2);
-      ctx.fill();
-      $('cashTag').textContent = `итог: ${fmt(last.cash, 1)}`;
+      ctx.fillRect(lx - 3.5, ly - 3.5, 7, 7);
+      $('cashTag').textContent = `FINAL ${fmt(last.cash, 1)}`;
     }
     cursor(f, tick);
   }
@@ -290,7 +280,7 @@
     for (const K of KIND) {
       const top = s.map((p, i) => acc[i] + (p.kinds[K.k] || 0));
       ctx.fillStyle = css(K.c);
-      ctx.globalAlpha = 0.82;
+      ctx.globalAlpha = 0.86;
       ctx.beginPath();
       s.forEach((p, i) => {
         const x0 = sx(p.t);
@@ -309,7 +299,7 @@
       top.forEach((v, i) => (acc[i] = v));
     }
 
-    ctx.strokeStyle = css('--text-3');
+    ctx.strokeStyle = css('--ink');
     ctx.setLineDash([4, 4]);
     ctx.lineWidth = 1;
     const cy = Math.round(sy(data.capacity)) + 0.5;
@@ -318,11 +308,11 @@
     ctx.lineTo(f.w - f.pad.r, cy);
     ctx.stroke();
     ctx.setLineDash([]);
-    ctx.fillStyle = css('--text-3');
-    ctx.font = '10.5px "JetBrains Mono", monospace';
+    ctx.fillStyle = css('--text-2');
+    ctx.font = '10px "JetBrains Mono", monospace';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'bottom';
-    ctx.fillText(`лимит ${data.capacity}`, f.pad.l + 4, cy - 3);
+    ctx.fillText(`CAP ${data.capacity}`, f.pad.l + 4, cy - 3);
     cursor(f, tick);
   }
 
@@ -334,13 +324,12 @@
     frames.flow = f;
     const { ctx, sx, sy } = f;
     const lines = [
-      ['produced', '--blue'],
+      ['produced', '--cobalt'],
       ['sold', '--emerald'],
     ];
     for (const [k, c] of lines) {
       ctx.strokeStyle = css(c);
-      ctx.lineWidth = 2.2;
-      ctx.lineJoin = 'round';
+      ctx.lineWidth = 2.4;
       ctx.beginPath();
       s.forEach((p, i) => (i ? ctx.lineTo(sx(p.t), sy(p[k])) : ctx.moveTo(sx(p.t), sy(p[k]))));
       ctx.stroke();
@@ -352,7 +341,7 @@
     const s = setup($('cMachines'));
     if (!s) return;
     const { ctx, w, h } = s;
-    const pad = { l: 92, r: 50, t: 8, b: 24 };
+    const pad = { l: 90, r: 48, t: 14, b: 24 };
     const ms = data.machines;
     const rowH = (h - pad.t - pad.b) / Math.max(1, ms.length);
     const sx = (t) => pad.l + (t / Math.max(1, data.horizon)) * (w - pad.l - pad.r);
@@ -360,13 +349,13 @@
 
     ms.forEach((m, i) => {
       const y = pad.t + i * rowH;
-      const barY = y + rowH * 0.25;
-      const barH = Math.max(7, rowH * 0.5);
+      const barY = y + rowH * 0.24;
+      const barH = Math.max(7, rowH * 0.52);
 
       ctx.fillStyle = css('--grid');
       ctx.fillRect(pad.l, barY, w - pad.l - pad.r, barH);
 
-      ctx.fillStyle = css('--blue');
+      ctx.fillStyle = css('--cobalt');
       const arr = data.busy[m] || [];
       let k = 0;
       while (k < arr.length) {
@@ -379,14 +368,14 @@
       }
 
       ctx.fillStyle = css('--text-2');
-      ctx.font = '500 11.5px "JetBrains Mono", monospace';
+      ctx.font = '600 11px "JetBrains Mono", monospace';
       ctx.textAlign = 'right';
       ctx.textBaseline = 'middle';
       ctx.fillText(m, pad.l - 10, y + rowH / 2);
 
-      ctx.fillStyle = css('--text');
+      ctx.fillStyle = css('--ink');
       ctx.textAlign = 'left';
-      ctx.font = '600 11.5px "JetBrains Mono", monospace';
+      ctx.font = '700 11px "JetBrains Mono", monospace';
       ctx.fillText(`${Math.round((data.util[m] || 0) * 100)}%`, w - pad.r + 8, y + rowH / 2);
     });
 
@@ -400,13 +389,13 @@
     cursor({ ctx, pad, sx, h }, tick);
   }
 
-  // ---------- Блоки данных ----------
+  // ---------- Отрисовка интерфейса ----------
   function legends() {
     const stHtml = KIND.map((K) => `<span><i style="background:${css(K.c)}"></i>${K.name}</span>`).join('');
     $('lgStorage').innerHTML = stHtml;
     $('lgFloor').innerHTML = stHtml;
     $('lgFlow').innerHTML =
-      `<span><i style="background:${css('--blue')}"></i>выпущено</span>` +
+      `<span><i style="background:${css('--cobalt')}"></i>выпущено</span>` +
       `<span><i style="background:${css('--emerald')}"></i>продано</span>`;
   }
 
@@ -416,62 +405,86 @@
     const avg = s.sold ? s.revenue / s.sold : 0;
     const profit = data.finish?.profit ?? last.cash;
     const refPct = s.sold + s.refused ? Math.round((100 * s.refused) / (s.sold + s.refused)) : 0;
+    const pctDone = Math.min(100, Math.round((data.t / Math.max(1, data.horizon)) * 100));
 
-    // 4 главных KPI
-    const hero = [
-      ['kpi-profit', 'Прибыль', fmt(profit, 1), data.done ? 'смена завершена' : `такт ${data.t} из ${data.horizon}`],
-      ['kpi-produced', 'Выпущено роботов', fmt(s.produced), `принято заготовок: ${fmt(s.accepted)}`],
-      ['kpi-sold', 'Продано', fmt(s.sold), `выручка: ${fmt(s.revenue)}`],
-      ['kpi-price', 'Средняя цена', fmt(avg, 1), `предложений: ${fmt(s.offers)}`],
-    ];
-    $('kpis').innerHTML = hero
-      .map(
-        ([cls, l, v, sub]) => `
-        <div class="kpi ${cls}">
-          <div class="kpi-label">${l}</div>
-          <div class="kpi-val">${v}</div>
-          <div class="kpi-sub">${sub}</div>
-        </div>`
-      )
-      .join('');
+    $('kpis').innerHTML = `
+      <div class="kpi-card hero">
+        <div class="kpi-head">
+          <span class="kpi-title">Прибыль смены</span>
+          <span class="kpi-code mono">KPI.01</span>
+        </div>
+        <div class="kpi-num">${fmt(profit, 1)}</div>
+        <div class="kpi-foot mono">
+          <span>${data.done ? 'СМЕНА ЗАВЕРШЕНА' : `ТАКТ ${data.t} / ${data.horizon}`}</span>
+          <span>${pctDone}%</span>
+        </div>
+        <div class="kpi-prog"><i style="width:${pctDone}%"></i></div>
+      </div>
 
-    // Вторичные метрики — компактная полоса чипов
+      <div class="kpi-card accent-blue">
+        <div class="kpi-head">
+          <span class="kpi-title">Выпущено</span>
+          <span class="kpi-code mono">KPI.02</span>
+        </div>
+        <div class="kpi-num">${fmt(s.produced)}</div>
+        <div class="kpi-foot mono"><span>заготовок: ${fmt(s.accepted)}</span></div>
+      </div>
+
+      <div class="kpi-card accent-orange">
+        <div class="kpi-head">
+          <span class="kpi-title">Продано</span>
+          <span class="kpi-code mono">KPI.03</span>
+        </div>
+        <div class="kpi-num">${fmt(s.sold)}</div>
+        <div class="kpi-foot mono"><span>выручка: ${fmt(s.revenue)}</span></div>
+      </div>
+
+      <div class="kpi-card accent-ink">
+        <div class="kpi-head">
+          <span class="kpi-title">Средняя цена</span>
+          <span class="kpi-code mono">KPI.04</span>
+        </div>
+        <div class="kpi-num">${fmt(avg, 1)}</div>
+        <div class="kpi-foot mono"><span>офферов: ${fmt(s.offers)}</span></div>
+      </div>
+    `;
+
+    // Вторичные метрики
     const chips = [
-      ['Отказы', `${fmt(s.refused)} (${refPct}%)`, s.refused > 0 && refPct >= 25],
-      ['Ошибки API', fmt(s.invalid), s.invalid > 0],
-      ['Отклик (макс / ср)', `${fmt(s.maxLatencyMs, 1)} / ${fmt(s.avgLatencyMs, 2)} мс`, false],
+      ['ОТКАЗЫ', `${fmt(s.refused)} (${refPct}%)`, s.refused > 0 && refPct >= 25],
+      ['ОШИБКИ API', fmt(s.invalid), s.invalid > 0],
+      ['ОТКЛИК', `${fmt(s.maxLatencyMs, 1)} / ${fmt(s.avgLatencyMs, 2)} мс`, false],
     ];
     $('subChips').innerHTML = chips
       .map(
         ([k, v, bad]) =>
-          `<div class="chip${bad ? ' chip-bad' : ''}"><span class="chip-k">${k}</span><span class="chip-v mono">${v}</span></div>`
+          `<div class="ticker-chip mono${bad ? ' bad' : ''}"><span class="tk">${k}</span><span class="tv">${v}</span></div>`
       )
       .join('');
 
-    // Индикаторы в сайдбаре и шапке
-    $('bcRun').textContent = data.runId || 'нет прогона';
+    $('bcRun').textContent = data.runId || 'IDLE';
     $('liveDot').classList.toggle('on', !data.done);
-    $('statusText').textContent = data.done ? 'Смена завершена' : 'Идёт симуляция';
-    $('statusMeta').textContent = `${data.runId} · t = ${data.t} / ${data.horizon}`;
-    const pct = Math.min(100, Math.round((data.t / Math.max(1, data.horizon)) * 100));
-    $('statusBar').style.width = `${pct}%`;
+    $('statusText').textContent = data.done ? 'ЗАВЕРШЁН' : 'LIVE';
     $('navSalesBadge').textContent = String((data.sales || []).length);
   }
 
   function snapshot() {
     const p = data.series[Math.min(tick, data.series.length - 1)];
     const tVal = p ? p.t : 0;
+    const hor = data.horizon || 0;
     $('atT').textContent = tVal;
-    $('tickLbl').textContent = `t = ${tVal}`;
+    $('tickLbl').textContent = `T: ${String(tVal).padStart(3, '0')} / ${String(hor).padStart(3, '0')}`;
     $('navTickBadge').textContent = `t=${tVal}`;
     if (!p) return;
 
     const cap = data.capacity || 12;
     const cells = [];
     const busyNow = Object.values(p.busyUntil || {}).filter((v) => v != null && v > p.t).length;
+    let slotIdx = 1;
+
     for (const it of p.items) {
       const K = KIND.find((x) => x.k === it.k);
-      const col = css(K?.c || '--blue');
+      const col = css(K?.c || '--cobalt');
       let label = K ? K.name.split(' ')[0] : it.k;
       let dot = '';
       if (it.k === 'robot' || (it.k === 'body' && it.c)) {
@@ -482,15 +495,21 @@
       if (it.k === 'robot') label = 'робот';
       if (it.k === 'sheet') label = 'лист';
       if (it.k === 'control') label = 'упр.';
+      const num = String(slotIdx++).padStart(2, '0');
       cells.push(
-        `<div class="cell full" style="--c:${col}" title="${it.k}${it.c ? ', ' + it.c : ''}${it.h ? ', ручки' : ''}">${dot}<span>${label}${it.h ? ' ⊓' : ''}</span></div>`
+        `<div class="cell full" style="--c:${col}" title="${it.k}${it.c ? ', ' + it.c : ''}${it.h ? ', ручки' : ''}"><span class="cell-idx">${num}</span>${dot}<span>${label}${it.h ? ' ⊓' : ''}</span></div>`
       );
     }
-    for (let i = 0; i < busyNow; i++) cells.push('<div class="cell reserved">резерв</div>');
-    while (cells.length < cap) cells.push('<div class="cell">—</div>');
+    for (let i = 0; i < busyNow; i++) {
+      const num = String(slotIdx++).padStart(2, '0');
+      cells.push(`<div class="cell reserved"><span class="cell-idx">${num}</span><span>РЕЗЕРВ</span></div>`);
+    }
+    while (cells.length < cap) {
+      const num = String(slotIdx++).padStart(2, '0');
+      cells.push(`<div class="cell"><span class="cell-idx">${num}</span><span>—</span></div>`);
+    }
     $('cells').innerHTML = cells.join('');
-
-    $('floorSummary').textContent = `Склад: ${p.items.length} занято · ${busyNow} резерв · лимит ${cap}`;
+    $('floorSummary').textContent = `СКЛАД: ${p.items.length} ЗАНЯТО · ${busyNow} РЕЗЕРВ · ЛИМИТ ${cap}`;
 
     let busyMachines = 0;
     $('mstate').innerHTML = data.machines
@@ -498,10 +517,10 @@
         const bu = p.busyUntil?.[m];
         const on = bu != null && bu > p.t;
         if (on) busyMachines++;
-        return `<div class="state-row"><span class="mono">${m}</span><span class="badge ${on ? 'badge-busy' : 'badge-ok'}">${on ? `занят до t=${bu}` : 'свободен'}</span></div>`;
+        return `<div class="hw-row"><span class="hw-name mono"><i class="hw-led ${on ? 'busy' : ''}"></i>${m}</span><span class="hw-badge ${on ? 'busy' : 'ok'}">${on ? `ЗАНЯТ → t=${bu}` : 'СВОБОДЕН'}</span></div>`;
       })
       .join('');
-    $('machinesSummary').textContent = `${busyMachines} из ${data.machines.length} в работе`;
+    $('machinesSummary').textContent = `${busyMachines} / ${data.machines.length} ACTIVE`;
 
     const bs = p.buyers || [];
     let readyBuyers = 0;
@@ -509,16 +528,16 @@
       .map((b) => {
         const ready = b.cd == null;
         if (ready) readyBuyers++;
-        return `<div class="state-row"><span class="mono">${b.id}</span><span class="badge ${ready ? 'badge-ok' : 'badge-warn'}">${ready ? 'принимает' : `пауза до t=${b.cd}`}</span></div>`;
+        return `<div class="hw-row"><span class="hw-name mono"><i class="hw-led ${ready ? '' : 'warn'}"></i>${b.id}</span><span class="hw-badge ${ready ? 'ok' : 'warn'}">${ready ? 'ПРИНИМАЕТ' : `ПАУЗА → t=${b.cd}`}</span></div>`;
       })
       .join('');
-    $('buyersSummary').textContent = `${readyBuyers} из ${bs.length} готовы`;
+    $('buyersSummary').textContent = `${readyBuyers} / ${bs.length} READY`;
   }
 
   function beliefs() {
     const bl = data.beliefs || [];
     if (!bl.length) {
-      $('beliefs').innerHTML = '<p class="empty-note">Нет данных: выбранная стратегия не строит вероятностную модель покупателей.</p>';
+      $('beliefs').innerHTML = '<p class="empty-note">Нет данных: выбранная стратегия не ведёт байесовскую модель покупателей.</p>';
       return;
     }
 
@@ -532,7 +551,6 @@
     const sum = data.buyerSummary || [];
     const truth = data.finish?.buyers || null;
 
-    // Опорный максимум Pmax для шкалы прогресс-баров по каждому покупателю
     const maxByBuyer = {};
     for (const b of buyers) {
       const s = sum.find((x) => x.buyerId === b);
@@ -551,11 +569,12 @@
           continue;
         }
         const best = Math.max(...bl.filter((x) => x.buyerId === b).map((x) => x.mean));
+        const isBest = row.mean === best;
         const pct = Math.max(4, Math.min(100, Math.round((row.mean / maxByBuyer[b]) * 100)));
-        html += `<td class="${row.mean === best ? 'best' : ''}">
+        html += `<td class="${isBest ? 'best' : ''}">
           <div class="price-cell">
             <div class="price-top">
-              <span class="p-num">${fmt(row.mean, 1)}</span>
+              <span class="p-num">${fmt(row.mean, 1)}${isBest ? '<span class="best-tag">TOP</span>' : ''}</span>
               <span class="p-rng">${fmt(row.low)}–${fmt(row.high)}</span>
             </div>
             <div class="price-bar"><i style="width:${pct}%"></i></div>
@@ -652,10 +671,10 @@
     syncSalesFilters();
     const filtered = getFilteredSales();
     const total = (data?.sales || []).length;
-    $('salesCount').textContent = filtered.length === total ? String(total) : `${filtered.length} из ${total}`;
+    $('salesCount').textContent = filtered.length === total ? String(total) : `${filtered.length} / ${total}`;
 
     if (!filtered.length) {
-      $('sales').innerHTML = '<p class="empty-note">Сделок по заданным условиям пока нет.</p>';
+      $('sales').innerHTML = '<p class="empty-note">Сделок по выбранным фильтрам пока нет.</p>';
       $('salesFoot').hidden = true;
       return;
     }
@@ -673,7 +692,7 @@
             `<td class="mono">${r.buyerId}</td>` +
             `<td><span class="sw" style="background:${ROBOT_DOT[r.props?.color] || '#999'}"></span>${typeName(r.props)}</td>` +
             `<td><span class="${r.outcome === 'sold' ? 'pill-ok' : 'pill-no'}">${
-              r.outcome === 'sold' ? 'продан' : 'отказ · ' + (WHY_RU[r.reason] || r.reason || '—')
+              r.outcome === 'sold' ? 'ПРОДАН' : 'ОТКАЗ · ' + (WHY_RU[r.reason] || r.reason || '—')
             }</span></td>` +
             `<td class="mono">${r.price != null ? fmt(r.price, 2) : '—'}</td>` +
             `</tr>`
@@ -685,8 +704,8 @@
     if (filtered.length > limit) {
       foot.hidden = false;
       $('toggleSalesBtn').textContent = salesExpanded
-        ? 'Свернуть до последних 15'
-        : `Показать все записи (${filtered.length})`;
+        ? 'СВЕРНУТЬ ДО 15'
+        : `ПОКАЗАТЬ ВСЕ (${filtered.length})`;
     } else {
       foot.hidden = true;
     }
@@ -718,8 +737,8 @@
     URL.revokeObjectURL(url);
   }
 
-  // ---------- Общий рендер ----------
-  function render() {
+  // ---------- Обновление всех представлений ----------
+  function drawAll() {
     if (!data) return;
     const max = Math.max(0, data.series.length - 1);
     const slider = $('tick');
@@ -753,11 +772,33 @@
     snapshot();
   }
 
-  // ---------- Подсказки при наведении на графики ----------
-  const tickTip = (t, rows) => `<b>такт ${t}</b><br>` + rows.join('<br>');
+  function togglePlay() {
+    if (playing) {
+      clearInterval(playing);
+      playing = null;
+      $('playBtn').textContent = '▶';
+      return;
+    }
+    if (!data) return;
+    $('follow').checked = false;
+    if (tick >= data.series.length - 1) tick = 0;
+    $('playBtn').textContent = '❚❚';
+    playing = setInterval(() => {
+      if (tick >= data.series.length - 1) {
+        clearInterval(playing);
+        playing = null;
+        $('playBtn').textContent = '▶';
+        return;
+      }
+      setTick(tick + 2);
+    }, 30);
+  }
+
+  // ---------- Всплывающие подсказки графиков ----------
+  const tickTip = (t, rows) => `<b>TAKT ${t}</b><br>` + rows.join('<br>');
   hoverable($('cCash'), () => frames.cash, (t) => {
     const p = data.series[t];
-    return p && tickTip(t, [`деньги: <b>${fmt(p.cash, 1)}</b>`, `выручка с начала: ${fmt(p.revenue)}`]);
+    return p && tickTip(t, [`деньги: <b>${fmt(p.cash, 1)}</b>`, `выручка: ${fmt(p.revenue)}`]);
   });
   hoverable($('cStorage'), () => frames.storage, (t) => {
     const p = data.series[t];
@@ -776,7 +817,7 @@
     return (
       p &&
       tickTip(t, [
-        `<span class="sw" style="background:${css('--blue')}"></span>выпущено: <b>${p.produced}</b>`,
+        `<span class="sw" style="background:${css('--cobalt')}"></span>выпущено: <b>${p.produced}</b>`,
         `<span class="sw" style="background:${css('--emerald')}"></span>продано: <b>${p.sold}</b>`,
       ])
     );
@@ -787,10 +828,10 @@
     const m = data.machines[i];
     if (!m) return '';
     const on = data.busy[m]?.[t];
-    return tickTip(t, [`${m}: <b>${on ? 'работает' : 'простаивает'}</b>`, `загрузка за смену: ${Math.round((data.util[m] || 0) * 100)}%`]);
+    return tickTip(t, [`${m}: <b>${on ? 'работает' : 'простаивает'}</b>`, `загрузка: ${Math.round((data.util[m] || 0) * 100)}%`]);
   });
 
-  // ---------- Загрузка данных с сервера ----------
+  // ---------- Опрос API ----------
   async function loadRuns() {
     try {
       const list = await (await fetch('/ui/runs')).json();
@@ -803,7 +844,7 @@
         }`;
       sel.innerHTML = list.length
         ? list.map((r) => `<option value="${r.runId}">${label(r)}</option>`).join('')
-        : '<option value="">— нет прогонов —</option>';
+        : '<option value="">— нет активных прогонов —</option>';
       if (cur && list.some((r) => r.runId === cur)) sel.value = cur;
       if (!selected && list.length) select(list[0].runId);
     } catch {}
@@ -817,7 +858,7 @@
       data = await r.json();
       lastSyncAt = Date.now();
       $('hint').hidden = true;
-      render();
+      drawAll();
     } catch {}
   }
 
@@ -829,7 +870,7 @@
     loadRun();
   }
 
-  // ---------- Обработчики событий ----------
+  // ---------- События ----------
   $('runSel').addEventListener('change', (e) => select(e.target.value));
 
   $('simBtn').addEventListener('click', async () => {
@@ -854,26 +895,23 @@
     setTick(Number(e.target.value));
   });
 
-  $('playBtn').addEventListener('click', () => {
-    if (playing) {
-      clearInterval(playing);
-      playing = null;
-      $('playBtn').textContent = '▶';
-      return;
-    }
+  $('playBtn').addEventListener('click', togglePlay);
+
+  // Управление с клавиатуры (Пробел — пауза/старт, стрелки — шаг по тактам)
+  window.addEventListener('keydown', (e) => {
     if (!data) return;
-    $('follow').checked = false;
-    if (tick >= data.series.length - 1) tick = 0;
-    $('playBtn').textContent = '❚❚';
-    playing = setInterval(() => {
-      if (tick >= data.series.length - 1) {
-        clearInterval(playing);
-        playing = null;
-        $('playBtn').textContent = '▶';
-        return;
-      }
-      setTick(tick + 2);
-    }, 30);
+    const tag = (e.target && e.target.tagName) || '';
+    if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+    if (e.code === 'Space' && (activeView === 'overview' || activeView === 'floor')) {
+      e.preventDefault();
+      togglePlay();
+    } else if (e.code === 'ArrowLeft') {
+      $('follow').checked = false;
+      setTick(Math.max(0, tick - 1));
+    } else if (e.code === 'ArrowRight') {
+      $('follow').checked = false;
+      setTick(Math.min(data.series.length - 1, tick + 1));
+    }
   });
 
   $('fBuyer').addEventListener('change', (e) => {
