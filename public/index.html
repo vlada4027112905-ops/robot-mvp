@@ -1,24 +1,17 @@
 <!doctype html>
-<html lang="ru" data-theme="light"> <!-- data-theme управляет темой ("light" / "dark"), переключается через #themeBtn в app.js -->
+<html lang="ru" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Завод роботов — Панель управления</title>
-
-<!-- подключение шрифтов: Inter (основной), JetBrains Mono (цифры/коды), Space Grotesk (заголовки) -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-<!-- корневая сетка: слева фиксированный сайдбар (276px), справа основная рабочая область -->
 <div class="layout">
-
-  <!-- ==================== ЛЕВАЯ БОКОВАЯ ПАНЕЛЬ ==================== -->
   <aside class="sidebar">
-    <!-- логотип и название приложения -->
     <div class="brand">
       <div class="brand-logo" aria-hidden="true">
         <span></span>
@@ -29,7 +22,6 @@
       </div>
     </div>
 
-    <!-- навигация по 4 вкладкам (переключает блоки .view по атрибуту data-view) -->
     <div class="sb-section">
       <div class="sb-caption">Разделы</div>
       <nav class="nav" id="mainNav" aria-label="Основная навигация">
@@ -40,7 +32,7 @@
         <button type="button" class="nav-item" data-view="floor">
           <span class="nav-icon">◫</span>
           <span class="nav-text">Состояние цеха</span>
-          <span class="nav-badge mono" id="navTickBadge">t=0</span> <!-- текущий такт в бейдже -->
+          <span class="nav-badge mono" id="navTickBadge">t=0</span>
         </button>
         <button type="button" class="nav-item" data-view="model">
           <span class="nav-icon">◎</span>
@@ -49,16 +41,14 @@
         <button type="button" class="nav-item" data-view="sales">
           <span class="nav-icon">≡</span>
           <span class="nav-text">Журнал сделок</span>
-          <span class="nav-badge mono" id="navSalesBadge">0</span> <!-- счётчик всех сделок -->
+          <span class="nav-badge mono" id="navSalesBadge">0</span>
         </button>
       </nav>
     </div>
 
-    <!-- форма настройки и запуска новой симуляции (POST /ui/simulate) -->
     <div class="sb-section">
       <div class="sb-caption">Управление прогоном</div>
       <div class="controls">
-        <!-- выпадающий список доступных прогонов (заполняется из GET /ui/runs) -->
         <label class="field">
           <span>Текущий прогон</span>
           <select id="runSel">
@@ -66,7 +56,6 @@
           </select>
         </label>
 
-        <!-- сид генерации мира и задержка между тактами в мс -->
         <div class="field-row">
           <label class="field">
             <span>Мир (seed)</span>
@@ -82,7 +71,6 @@
           </label>
         </div>
 
-        <!-- выбор алгоритма планирования и ценообразования -->
         <label class="field">
           <span>Стратегия</span>
           <select id="strat">
@@ -97,12 +85,11 @@
       </div>
     </div>
 
-    <!-- нижний виджет статуса прогона в сайдбаре -->
     <div class="sb-footer">
       <div class="status-card">
         <div class="status-row">
-          <span class="status-dot" id="liveDot"></span> <!-- зелёный индикатор, пока прогон идёт -->
-          <span class="status-label" id="statusText">Ожидание прогона</span> <!-- LIVE / ЗАВЕРШЁН -->
+          <span class="status-dot" id="liveDot"></span>
+          <span class="status-label" id="statusText">Ожидание прогона</span>
         </div>
         <div class="status-meta mono" id="statusMeta">нет активных данных</div>
         <div class="status-progress">
@@ -112,10 +99,7 @@
     </div>
   </aside>
 
-  <!-- ==================== ПРАВАЯ РАБОЧАЯ ОБЛАСТЬ ==================== -->
   <div class="main">
-
-    <!-- липкая верхняя шапка с хлебными крошками и кнопкой смены темы -->
     <header class="topbar">
       <div class="topbar-left">
         <div class="crumbs">
@@ -123,54 +107,47 @@
           <span class="crumb-sep">/</span>
           <span class="crumb-active" id="viewTitle">Обзор и графики</span>
         </div>
-        <span class="run-pill mono" id="bcRun">нет прогона</span> <!-- ID выбранного прогона -->
+        <span class="run-pill mono" id="bcRun">нет прогона</span>
       </div>
       <div class="topbar-right">
-        <span class="sync-indicator mono" id="syncLbl">синхронизация…</span> <!-- таймер с последнего опроса API -->
+        <span class="sync-indicator mono" id="syncLbl">синхронизация…</span>
         <button id="themeBtn" class="btn-ghost" type="button" title="Сменить оформление">Тёмная тема</button>
       </div>
     </header>
 
-    <!-- основной контейнер контента -->
     <div class="container">
-
-      <!-- стартовая плашка-подсказка (скрывается через hidden, когда загрузится первый прогон) -->
       <div class="empty-banner" id="hint">
         Прогоны арены и песочницы загружаются автоматически. Для локальной проверки укажите номер мира в панели слева и нажмите «Запустить симуляцию».
       </div>
 
-      <!-- сквозной плеер таймлайна: позволяет ставить смену на паузу и мотать такты (показывается только в overview и floor) -->
       <section class="timeline-bar" id="timelineBar">
         <button id="playBtn" class="play-btn" type="button" title="Проиграть смену">▶</button>
         <div class="timeline-slider">
-          <input id="tick" type="range" min="0" max="0" value="0"> <!-- ползунок выбора такта -->
+          <input id="tick" type="range" min="0" max="0" value="0">
         </div>
         <span id="tickLbl" class="tick-pill mono">t = 0</span>
         <label class="follow-check">
-          <input type="checkbox" id="follow" checked> <!-- автоследование за последним тактом в реальном времени -->
+          <input type="checkbox" id="follow" checked>
           <span>Следить</span>
         </label>
       </section>
 
-      <!-- ---------- ВКЛАДКА 1: ОБЗОР И ГРАФИКИ ---------- -->
       <div class="view active" id="view-overview">
         <div class="section-head">
           <div>
             <div class="kicker mono">01 / TELEMETRY</div>
             <h1>Показатели смены</h1>
           </div>
-          <div class="metric-chips" id="subChips"></div> <!-- чипы второстепенных метрик: отказы, ошибки API, пинг -->
+          <div class="metric-chips" id="subChips"></div>
         </div>
 
-        <!-- сетка из 4 главных KPI-карточек (прибыль, выпуск, продажи, средняя цена) -->
         <section class="kpi-grid" id="kpis"></section>
 
-        <!-- сетка из 4 графиков на HTML5 Canvas -->
         <section class="charts-grid">
           <article class="card">
             <div class="card-head">
               <h2>Деньги по тактам</h2>
-              <span class="card-tag mono" id="cashTag">—</span> <!-- итоговый баланс -->
+              <span class="card-tag mono" id="cashTag">—</span>
             </div>
             <canvas id="cCash" height="224"></canvas>
           </article>
@@ -178,7 +155,7 @@
           <article class="card">
             <div class="card-head">
               <h2>Заполненность склада</h2>
-              <div class="legend" id="lgStorage"></div> <!-- легенда типов деталей -->
+              <div class="legend" id="lgStorage"></div>
             </div>
             <canvas id="cStorage" height="224"></canvas>
           </article>
@@ -188,7 +165,7 @@
               <h2>Загрузка станков</h2>
               <span class="card-tag mono">за смену</span>
             </div>
-            <canvas id="cMachines" height="224"></canvas> <!-- диаграмма Ганта работы станков -->
+            <canvas id="cMachines" height="224"></canvas>
           </article>
 
           <article class="card">
@@ -201,7 +178,6 @@
         </section>
       </div>
 
-      <!-- ---------- ВКЛАДКА 2: СОСТОЯНИЕ ЦЕХА (НА ВЫБРАННОМ ТАКТЕ) ---------- -->
       <div class="view" id="view-floor">
         <div class="section-head">
           <div>
@@ -211,14 +187,13 @@
           <div class="floor-summary mono" id="floorSummary">Склад: 0 / 0</div>
         </div>
 
-        <!-- 3 колонки: слоты склада, статус станков, статус покупателей -->
         <section class="floor-grid">
           <article class="card">
             <div class="card-head">
               <h2>Ячейки склада</h2>
               <div class="legend" id="lgFloor"></div>
             </div>
-            <div id="cells" class="cells"></div> <!-- сетка ячеек склада (занято / резерв / пусто) -->
+            <div id="cells" class="cells"></div>
           </article>
 
           <article class="card">
@@ -226,7 +201,7 @@
               <h2>Станки</h2>
               <span class="card-tag mono" id="machinesSummary">—</span>
             </div>
-            <div id="mstate" class="state-list"></div> <!-- список станков: свободен или занят до такта N -->
+            <div id="mstate" class="state-list"></div>
           </article>
 
           <article class="card">
@@ -234,12 +209,11 @@
               <h2>Покупатели</h2>
               <span class="card-tag mono" id="buyersSummary">—</span>
             </div>
-            <div id="bstate" class="state-list"></div> <!-- список покупателей: принимает или на паузе -->
+            <div id="bstate" class="state-list"></div>
           </article>
         </section>
       </div>
 
-      <!-- ---------- ВКЛАДКА 3: БАЙЕСОВСКАЯ МОДЕЛЬ ПОКУПАТЕЛЕЙ ---------- -->
       <div class="view" id="view-model">
         <div class="section-head">
           <div>
@@ -250,19 +224,16 @@
         </div>
 
         <article class="card">
-          <div id="beliefs" class="table-wrap"></div> <!-- матрица оценок «тип робота × покупатель» + сверка с истиной в конце смены -->
+          <div id="beliefs" class="table-wrap"></div>
         </article>
       </div>
 
-      <!-- ---------- ВКЛАДКА 4: ЖУРНАЛ СДЕЛОК ---------- -->
       <div class="view" id="view-sales">
         <div class="section-head">
           <div>
             <div class="kicker mono">04 / TRANSACTIONS</div>
             <h1>Журнал сделок <span class="title-count mono" id="salesCount">0</span></h1>
           </div>
-
-          <!-- панель фильтрации и экспорта -->
           <div class="sales-toolbar">
             <select id="fBuyer" class="tool-select">
               <option value="">Все покупатели</option>
@@ -270,7 +241,6 @@
             <select id="fRobot" class="tool-select">
               <option value="">Все типы роботов</option>
             </select>
-            <!-- сегментированный фильтр: все / продано / отказы -->
             <div class="segmented" id="fOutcome" role="group" aria-label="Фильтр по результату">
               <button type="button" class="seg active" data-val="">Все</button>
               <button type="button" class="seg" data-val="sold">Продано</button>
@@ -281,21 +251,17 @@
         </div>
 
         <article class="card">
-          <div id="sales" class="table-wrap"></div> <!-- таблица истории офферов -->
+          <div id="sales" class="table-wrap"></div>
           <div class="sales-foot" id="salesFoot" hidden>
             <button id="toggleSalesBtn" class="btn-ghost" type="button">Показать все записи</button>
           </div>
         </article>
       </div>
-
     </div>
   </div>
 </div>
 
-<!-- плавающий тултип для графиков (двигается за курсором) -->
 <div id="tip" class="tip mono" hidden></div>
-
-<!-- логика опроса API, отрисовки графиков и управления интерфейсом -->
 <script src="app.js"></script>
 </body>
 </html>
