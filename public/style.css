@@ -1,27 +1,22 @@
-/* Завод роботов — светлый минималистичный интерфейс панели управления */
-
-/* ==================== 1. CSS-ПЕРЕМЕННЫЕ И ТЕМЫ ==================== */
-/* Светлая тема (по умолчанию). Все цвета вынесены в переменные (--*), 
-   чтобы быстро менять тему и забирать их прямо из JS через getComputedStyle() для отрисовки графиков на Canvas */
+/* Завод роботов — панель управления */
 :root,
 :root[data-theme="light"] {
-  color-scheme: light;           /* подсказывает браузеру красить системные скроллбары и селекты в светлый цвет */
-  --bg: #f6f7f9;                 /* общий фон страницы */
-  --surface: #ffffff;            /* фон карточек, сайдбара и шапки */
-  --surface-2: #f1f3f6;          /* вторичный фон (инпуты, шапки таблиц, бейджи) */
-  --surface-hover: #f8f9fb;      /* подсветка строк таблицы при наведении */
-  --border: #e4e7ec;             /* обычные рамки */
-  --border-strong: #cbd2dd;      /* акцентные рамки (при наведении, пунктир пустых ячеек) */
-  --grid: rgba(16, 24, 40, 0.07);/* цвет сетки внутри графиков Canvas */
+  color-scheme: light;
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --surface-2: #f1f3f6;
+  --surface-hover: #f8f9fb;
+  --border: #e4e7ec;
+  --border-strong: #cbd2dd;
+  --grid: rgba(16, 24, 40, 0.07);
 
-  --text: #0f172a;               /* основной цвет текста */
-  --text-2: #475467;             /* вторичный текст (подписи, неактивные вкладки) */
-  --text-3: #667085;             /* приглушённый текст (подсказки, мелкие метки) */
+  --text: #0f172a;
+  --text-2: #475467;
+  --text-3: #667085;
 
-  --ink: #0f172a;                /* контрастный акцент (кнопка запуска, бегунок таймлайна) */
-  --ink-text: #ffffff;           /* текст поверх контрастного акцента */
+  --ink: #0f172a;
+  --ink-text: #ffffff;
 
-  /* Семантические цвета: успех/прибыль (зелёный), процесс/листы (синий), пауза/продажи (янтарный), отказ/ошибка (красный) */
   --emerald: #059669;
   --emerald-bg: #ecfdf5;
   --emerald-border: #a7f3d0;
@@ -29,6 +24,7 @@
   --blue: #2563eb;
   --blue-bg: #eff6ff;
   --blue-border: #bfdbfe;
+  --cobalt: #2563eb;
 
   --amber: #d97706;
   --amber-bg: #fffbeb;
@@ -37,14 +33,13 @@
   --red: #e11d48;
   --red-bg: #fff1f2;
   --red-border: #fecdd3;
+  --signal: #e11d48;
 
-  /* Цвета категорий деталей на складе (читаются в app.js из массива KIND: листы, управление, корпуса, роботы) */
   --s1: #2563eb;
   --s2: #f59e0b;
   --s3: #059669;
   --s4: #0f172a;
 
-  /* Тени и скругления углов */
   --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.04);
   --shadow-md: 0 6px 20px -6px rgba(16, 24, 40, 0.08);
   --r-sm: 6px;
@@ -52,7 +47,6 @@
   --r-lg: 14px;
 }
 
-/* Тёмная тема: активируется, когда JS вешает атрибут data-theme="dark" на тег <html> */
 :root[data-theme="dark"] {
   color-scheme: dark;
   --bg: #0b0d12;
@@ -77,6 +71,7 @@
   --blue: #60a5fa;
   --blue-bg: rgba(96, 165, 250, 0.14);
   --blue-border: rgba(96, 165, 250, 0.34);
+  --cobalt: #60a5fa;
 
   --amber: #fbbf24;
   --amber-bg: rgba(251, 191, 36, 0.13);
@@ -85,6 +80,7 @@
   --red: #fb7185;
   --red-bg: rgba(251, 113, 133, 0.14);
   --red-border: rgba(251, 113, 133, 0.34);
+  --signal: #fb7185;
 
   --s1: #60a5fa;
   --s2: #fbbf24;
@@ -95,9 +91,8 @@
   --shadow-md: 0 10px 28px -8px rgba(0, 0, 0, 0.5);
 }
 
-/* ==================== 2. БАЗОВЫЙ СБРОС И ТИПОГРАФИКА ==================== */
 * {
-  box-sizing: border-box; /* padding и border включаются в общую ширину/высоту элемента, чтобы вёрстка не разъезжалась */
+  box-sizing: border-box;
 }
 
 html, body {
@@ -106,30 +101,29 @@ html, body {
   background: var(--bg);
   color: var(--text);
   font: 14px/1.5 "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
-  -webkit-font-smoothing: antialiased; /* сглаживание шрифтов на macOS/WebKit */
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Моноширинный стиль для тактов, цен и счётчиков */
 .mono {
   font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-variant-numeric: tabular-nums; /* фиксированная ширина каждой цифры, чтобы числа не "прыгали" при обновлении */
+  font-variant-numeric: tabular-nums;
 }
 
-/* ==================== 3. КАРКАС СТРАНИЦЫ (GRID) ==================== */
+/* ---------- Каркас ---------- */
 .layout {
   display: grid;
-  grid-template-columns: 276px minmax(0, 1fr); /* слева сайдбар 276px, справа контент; minmax(0, 1fr) не даёт графикам и таблицам распирать сетку */
+  grid-template-columns: 276px minmax(0, 1fr);
   min-height: 100vh;
 }
 
-/* ==================== 4. БОКОВАЯ ПАНЕЛЬ (САЙДБАР) ==================== */
+/* ---------- Боковая панель ---------- */
 .sidebar {
   background: var(--surface);
   border-right: 1px solid var(--border);
-  position: sticky; /* прилипает к левому краю при прокрутке страницы */
+  position: sticky;
   top: 0;
   height: 100vh;
-  overflow-y: auto; /* внутренний скролл, если экран низкий */
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
 }
@@ -150,7 +144,7 @@ html, body {
   border-radius: 8px;
   background: var(--ink);
   display: grid;
-  place-items: center; /* центрирует зелёный квадратик внутри логотипа */
+  place-items: center;
   flex-shrink: 0;
 }
 
@@ -188,7 +182,6 @@ html, body {
   margin: 0 0 10px 6px;
 }
 
-/* Навигация по вкладкам */
 .nav {
   display: flex;
   flex-direction: column;
@@ -235,7 +228,7 @@ html, body {
 }
 
 .nav-text {
-  flex: 1; /* растягивает текст, прижимая бейдж (t=0) к правому краю */
+  flex: 1;
 }
 
 .nav-badge {
@@ -253,7 +246,6 @@ html, body {
   border-color: var(--border-strong);
 }
 
-/* Форма настройки и запуска симуляции */
 .controls {
   display: flex;
   flex-direction: column;
@@ -274,7 +266,7 @@ html, body {
 
 .field-row {
   display: grid;
-  grid-template-columns: 1fr 1.25fr; /* поле скорости чуть шире поля seed */
+  grid-template-columns: 1fr 1.25fr;
   gap: 8px;
 }
 
@@ -304,7 +296,6 @@ input[type="number"]:focus {
   box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.08);
 }
 
-/* Главная кнопка "Запустить симуляцию" */
 .btn-primary {
   width: 100%;
   margin-top: 2px;
@@ -323,10 +314,9 @@ input[type="number"]:focus {
 }
 
 .btn-primary:active {
-  transform: translateY(1px); /* лёгкий эффект нажатия */
+  transform: translateY(1px);
 }
 
-/* Второстепенные кнопки (смена темы, экспорт CSV, показать все) */
 .btn-ghost {
   padding: 7px 12px;
   border: 1px solid var(--border);
@@ -344,9 +334,8 @@ input[type="number"]:focus {
   background: var(--surface-2);
 }
 
-/* Нижний блок статуса в сайдбаре */
 .sb-footer {
-  margin-top: auto; /* прижимает карточку статуса к самому низу сайдбара */
+  margin-top: auto;
   padding: 16px;
 }
 
@@ -371,7 +360,6 @@ input[type="number"]:focus {
   flex-shrink: 0;
 }
 
-/* Класс .on добавляется из JS, пока симуляция активна */
 .status-dot.on {
   background: var(--emerald);
   box-shadow: 0 0 0 3px var(--emerald-bg);
@@ -405,7 +393,7 @@ input[type="number"]:focus {
   transition: width 0.2s ease;
 }
 
-/* ==================== 5. ВЕРХНЯЯ ПАНЕЛЬ (TOPBAR) ==================== */
+/* ---------- Верхняя панель ---------- */
 .main {
   display: flex;
   flex-direction: column;
@@ -417,7 +405,7 @@ input[type="number"]:focus {
   padding: 0 28px;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
-  position: sticky; /* закреплена сверху при скролле */
+  position: sticky;
   top: 0;
   z-index: 20;
   display: flex;
@@ -463,7 +451,7 @@ input[type="number"]:focus {
   color: var(--text-3);
 }
 
-/* ==================== 6. КОНТЕЙНЕР И СТАРТОВЫЙ БАННЕР ==================== */
+/* ---------- Контейнер ---------- */
 .container {
   padding: 24px 28px 52px;
   max-width: 1360px;
@@ -485,7 +473,7 @@ input[type="number"]:focus {
   box-shadow: var(--shadow-sm);
 }
 
-/* ==================== 7. ТАЙМЛАЙН (ПЛЕЕР ТАКТОВ) ==================== */
+/* ---------- Таймлайн ---------- */
 .timeline-bar {
   display: flex;
   align-items: center;
@@ -497,7 +485,6 @@ input[type="number"]:focus {
   box-shadow: var(--shadow-sm);
 }
 
-/* Явно скрываем плеер на вкладках "Модель" и "Сделки", т.к. display: flex выше перебил бы стандартный атрибут hidden */
 .timeline-bar[hidden] {
   display: none;
 }
@@ -529,7 +516,6 @@ input[type="number"]:focus {
   align-items: center;
 }
 
-/* Кастомная стилизация ползунка input[type="range"] под Chrome/Safari и Firefox */
 .timeline-bar input[type="range"] {
   width: 100%;
   -webkit-appearance: none;
@@ -568,7 +554,7 @@ input[type="number"]:focus {
   border-radius: var(--r-sm);
   background: var(--surface-2);
   border: 1px solid var(--border);
-  min-width: 78px;
+  min-width: 96px;
   text-align: center;
 }
 
@@ -588,15 +574,15 @@ input[type="number"]:focus {
   cursor: pointer;
 }
 
-/* ==================== 8. ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК И ЗАГОЛОВКИ ==================== */
+/* ---------- Разделы ---------- */
 .view {
-  display: none; /* по умолчанию все разделы скрыты */
+  display: none;
   flex-direction: column;
   gap: 20px;
 }
 
 .view.active {
-  display: flex; /* показывается только активный раздел */
+  display: flex;
 }
 
 .section-head {
@@ -648,7 +634,7 @@ input[type="number"]:focus {
   border-radius: var(--r-sm);
 }
 
-/* ==================== 9. ВТОРИЧНЫЕ МЕТРИКИ (ЧИПЫ) ==================== */
+/* ---------- Вторичные метрики ---------- */
 .metric-chips {
   display: flex;
   flex-wrap: wrap;
@@ -676,7 +662,6 @@ input[type="number"]:focus {
   color: var(--text);
 }
 
-/* Красная подсветка, если много отказов или есть ошибки API */
 .chip.chip-bad {
   background: var(--red-bg);
   border-color: var(--red-border);
@@ -686,17 +671,17 @@ input[type="number"]:focus {
   color: var(--red);
 }
 
-/* ==================== 10. 4 КАРТОЧКИ KPI ==================== */
+/* ---------- Карточки KPI ---------- */
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr)); /* 4 равные колонки */
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
 }
 
 .kpi {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-top: 3px solid var(--border-strong); /* цветная полоска сверху */
+  border-top: 3px solid var(--border-strong);
   border-radius: var(--r-md);
   padding: 18px 20px;
   box-shadow: var(--shadow-sm);
@@ -704,7 +689,7 @@ input[type="number"]:focus {
 }
 
 .kpi:hover {
-  transform: translateY(-2px); /* лёгкий подъём карточки при наведении */
+  transform: translateY(-2px);
   box-shadow: var(--shadow-md);
 }
 
@@ -744,10 +729,10 @@ input[type="number"]:focus {
   text-overflow: ellipsis;
 }
 
-/* ==================== 11. КАРТОЧКИ И СЕТКА ГРАФИКОВ ==================== */
+/* ---------- Графики ---------- */
 .charts-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr)); /* сетка 2x2 для 4 графиков */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
 }
 
@@ -786,8 +771,9 @@ input[type="number"]:focus {
 
 canvas {
   width: 100%;
+  height: 224px;
   display: block;
-  cursor: crosshair; /* курсор-перекрестие для точного наведения на такт */
+  cursor: crosshair;
 }
 
 .legend {
@@ -811,22 +797,22 @@ canvas {
   display: inline-block;
 }
 
-/* ==================== 12. РАЗДЕЛ "СОСТОЯНИЕ ЦЕХА" (3 КОЛОНКИ) ==================== */
+/* ---------- Цех ---------- */
 .floor-grid {
   display: grid;
-  grid-template-columns: 1.35fr 1fr 1fr; /* склад шире, станки и покупатели по 1fr */
+  grid-template-columns: 1.35fr 1fr 1fr;
   gap: 16px;
   align-items: start;
 }
 
 .cells {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr)); /* 12 ячеек склада = сетка 4x3 */
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 9px;
 }
 
-/* Пустая ячейка склада */
 .cell {
+  position: relative;
   height: 62px;
   border-radius: var(--r-sm);
   border: 1px dashed var(--border-strong);
@@ -841,7 +827,16 @@ canvas {
   gap: 4px;
 }
 
-/* Занятая ячейка: цвет нижней рамки (--c) передаётся инлайново из JS под тип детали */
+.cell-idx {
+  position: absolute;
+  top: 4px;
+  left: 6px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 9.5px;
+  color: var(--text-3);
+  opacity: 0.7;
+}
+
 .cell.full {
   border-style: solid;
   border-color: var(--border);
@@ -851,7 +846,6 @@ canvas {
   box-shadow: var(--shadow-sm);
 }
 
-/* Зарезервированная ячейка (под деталь, которая сейчас делается на станке): диагональная штриховка */
 .cell.reserved {
   background: repeating-linear-gradient(
     -45deg,
@@ -863,7 +857,6 @@ canvas {
   font-size: 11px;
 }
 
-/* Цветной кружок (красный/зелёный/синий) для окрашенных корпусов и роботов */
 .cell .dot {
   width: 9px;
   height: 9px;
@@ -917,9 +910,9 @@ canvas {
   color: var(--amber);
 }
 
-/* ==================== 13. ТАБЛИЦЫ И МОДЕЛЬ ПОКУПАТЕЛЕЙ ==================== */
+/* ---------- Таблицы ---------- */
 .table-wrap {
-  overflow-x: auto; /* горизонтальный скролл таблицы на узких экранах */
+  overflow-x: auto;
 }
 
 table {
@@ -953,7 +946,6 @@ tbody tr:last-child td {
   border-bottom: 0;
 }
 
-/* Подсветка самой выгодной конфигурации робота для конкретного покупателя */
 td.best {
   background: var(--emerald-bg);
 }
@@ -961,6 +953,17 @@ td.best {
 td.best .p-num {
   color: var(--emerald);
   font-weight: 700;
+}
+
+.best-tag {
+  margin-left: 5px;
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: var(--emerald);
+  color: #ffffff;
+  vertical-align: middle;
 }
 
 .price-cell {
@@ -988,7 +991,6 @@ td.best .p-num {
   color: var(--text-3);
 }
 
-/* Полоска прогресса ожидаемой цены относительно Pmax */
 .price-bar {
   height: 4px;
   width: 100%;
@@ -1008,7 +1010,6 @@ td.best .price-bar > i {
   background: var(--emerald);
 }
 
-/* Итоговые строки внизу таблицы модели (оценка vs истинные параметры) */
 .row-meta td {
   background: var(--surface-2);
   font-size: 12.5px;
@@ -1017,7 +1018,7 @@ td.best .price-bar > i {
 .ok { color: var(--emerald); font-weight: 600; }
 .no { color: var(--red); font-weight: 600; }
 
-/* ==================== 14. ЖУРНАЛ СДЕЛОК И ФИЛЬТРЫ ==================== */
+/* ---------- Журнал сделок ---------- */
 .title-count {
   font-size: 13px;
   font-weight: 600;
@@ -1043,7 +1044,6 @@ td.best .price-bar > i {
   background: var(--surface);
 }
 
-/* Переключатель "Все / Продано / Отказы" */
 .segmented {
   display: inline-flex;
   background: var(--surface);
@@ -1072,7 +1072,6 @@ td.best .price-bar > i {
   font-weight: 600;
 }
 
-/* Плашки статуса сделки в таблице */
 .pill-ok {
   display: inline-block;
   padding: 3px 9px;
@@ -1119,10 +1118,10 @@ td.best .price-bar > i {
   font-size: 13px;
 }
 
-/* ==================== 15. ВСПЛЫВАЮЩАЯ ПОДСКАЗКА (ТУЛТИП) ==================== */
+/* ---------- Тултип ---------- */
 .tip {
   position: fixed;
-  pointer-events: none; /* тултип не перехватывает события мыши, чтобы не мешать водить курсором по графику */
+  pointer-events: none;
   background: var(--surface);
   color: var(--text);
   border: 1px solid var(--border-strong);
@@ -1134,10 +1133,10 @@ td.best .price-bar > i {
   z-index: 40;
 }
 
-/* ==================== 16. АДАПТИВНОСТЬ (ПЛАНШЕТЫ И МОБИЛКИ) ==================== */
+/* ---------- Адаптивность ---------- */
 @media (max-width: 1120px) {
   .layout {
-    grid-template-columns: 1fr; /* убираем боковую колонку, сайдбар уезжает наверх */
+    grid-template-columns: 1fr;
   }
   .sidebar {
     position: static;
@@ -1146,18 +1145,18 @@ td.best .price-bar > i {
     border-bottom: 1px solid var(--border);
   }
   .nav {
-    flex-direction: row; /* вкладки выстраиваются в горизонтальную полосу */
+    flex-direction: row;
     flex-wrap: wrap;
   }
   .nav-item {
     width: auto;
   }
   .kpi-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr)); /* 2 карточки в ряд вместо 4 */
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .charts-grid,
   .floor-grid {
-    grid-template-columns: 1fr; /* графики и колонки цеха в 1 столбец */
+    grid-template-columns: 1fr;
   }
 }
 
