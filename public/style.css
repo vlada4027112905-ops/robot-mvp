@@ -371,4 +371,810 @@ input[type="number"]:focus {
   flex-shrink: 0;
 }
 
-/*
+/* Класс .on добавляется из JS, пока симуляция активна */
+.status-dot.on {
+  background: var(--emerald);
+  box-shadow: 0 0 0 3px var(--emerald-bg);
+}
+
+.status-label {
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.status-meta {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.status-progress {
+  margin-top: 10px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.status-progress-fill {
+  height: 100%;
+  background: var(--emerald);
+  transition: width 0.2s ease;
+}
+
+/* ==================== 5. ВЕРХНЯЯ ПАНЕЛЬ (TOPBAR) ==================== */
+.main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.topbar {
+  height: 60px;
+  padding: 0 28px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  position: sticky; /* закреплена сверху при скролле */
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.topbar-left,
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.crumbs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+}
+
+.crumb-muted { color: var(--text-3); }
+.crumb-sep { color: var(--border-strong); }
+.crumb-active { font-weight: 600; color: var(--text); }
+
+.run-pill {
+  font-size: 11.5px;
+  color: var(--text-2);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 240px;
+}
+
+.sync-indicator {
+  font-size: 11.5px;
+  color: var(--text-3);
+}
+
+/* ==================== 6. КОНТЕЙНЕР И СТАРТОВЫЙ БАННЕР ==================== */
+.container {
+  padding: 24px 28px 52px;
+  max-width: 1360px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.empty-banner {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--blue);
+  border-radius: var(--r-md);
+  padding: 13px 16px;
+  font-size: 13.5px;
+  color: var(--text-2);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ==================== 7. ТАЙМЛАЙН (ПЛЕЕР ТАКТОВ) ==================== */
+.timeline-bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Явно скрываем плеер на вкладках "Модель" и "Сделки", т.к. display: flex выше перебил бы стандартный атрибут hidden */
+.timeline-bar[hidden] {
+  display: none;
+}
+
+.play-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 12px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  transition: background 0.14s ease, border-color 0.14s ease;
+}
+
+.play-btn:hover {
+  background: var(--ink);
+  color: var(--ink-text);
+  border-color: var(--ink);
+}
+
+.timeline-slider {
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+/* Кастомная стилизация ползунка input[type="range"] под Chrome/Safari и Firefox */
+.timeline-bar input[type="range"] {
+  width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--border);
+  outline: none;
+  cursor: pointer;
+}
+
+.timeline-bar input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--ink);
+  border: 3px solid var(--surface);
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.35);
+}
+
+.timeline-bar input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--ink);
+  border: 3px solid var(--surface);
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.35);
+}
+
+.tick-pill {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  min-width: 78px;
+  text-align: center;
+}
+
+.follow-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-2);
+  cursor: pointer;
+  user-select: none;
+}
+
+.follow-check input {
+  accent-color: var(--emerald);
+  cursor: pointer;
+}
+
+/* ==================== 8. ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК И ЗАГОЛОВКИ ==================== */
+.view {
+  display: none; /* по умолчанию все разделы скрыты */
+  flex-direction: column;
+  gap: 20px;
+}
+
+.view.active {
+  display: flex; /* показывается только активный раздел */
+}
+
+.section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px 20px;
+}
+
+.kicker {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--text-3);
+  margin-bottom: 4px;
+}
+
+.section-head h1 {
+  margin: 0;
+  font-family: "Space Grotesk", "Inter", sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.accent-num {
+  color: var(--emerald);
+}
+
+.head-note {
+  margin: 0;
+  max-width: 520px;
+  font-size: 13px;
+  color: var(--text-3);
+}
+
+.floor-summary {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-2);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 6px 12px;
+  border-radius: var(--r-sm);
+}
+
+/* ==================== 9. ВТОРИЧНЫЕ МЕТРИКИ (ЧИПЫ) ==================== */
+.metric-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 11px;
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-size: 12px;
+  box-shadow: var(--shadow-sm);
+}
+
+.chip-k {
+  color: var(--text-3);
+}
+
+.chip-v {
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* Красная подсветка, если много отказов или есть ошибки API */
+.chip.chip-bad {
+  background: var(--red-bg);
+  border-color: var(--red-border);
+}
+
+.chip.chip-bad .chip-v {
+  color: var(--red);
+}
+
+/* ==================== 10. 4 КАРТОЧКИ KPI ==================== */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)); /* 4 равные колонки */
+  gap: 14px;
+}
+
+.kpi {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--border-strong); /* цветная полоска сверху */
+  border-radius: var(--r-md);
+  padding: 18px 20px;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.16s ease, box-shadow 0.16s ease;
+}
+
+.kpi:hover {
+  transform: translateY(-2px); /* лёгкий подъём карточки при наведении */
+  box-shadow: var(--shadow-md);
+}
+
+.kpi.kpi-profit { border-top-color: var(--emerald); }
+.kpi.kpi-produced { border-top-color: var(--blue); }
+.kpi.kpi-sold { border-top-color: var(--amber); }
+.kpi.kpi-price { border-top-color: var(--ink); }
+
+.kpi-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+}
+
+.kpi-val {
+  margin-top: 8px;
+  font-family: "Space Grotesk", "Inter", sans-serif;
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.08;
+  font-variant-numeric: tabular-nums;
+}
+
+.kpi.kpi-profit .kpi-val {
+  color: var(--emerald);
+}
+
+.kpi-sub {
+  margin-top: 7px;
+  font-size: 12px;
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ==================== 11. КАРТОЧКИ И СЕТКА ГРАФИКОВ ==================== */
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)); /* сетка 2x2 для 4 графиков */
+  gap: 16px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 18px 20px;
+  min-width: 0;
+  box-shadow: var(--shadow-sm);
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.card h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.card-tag {
+  font-size: 11.5px;
+  color: var(--text-3);
+  background: var(--surface-2);
+  padding: 3px 8px;
+  border-radius: var(--r-sm);
+}
+
+canvas {
+  width: 100%;
+  display: block;
+  cursor: crosshair; /* курсор-перекрестие для точного наведения на такт */
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend i {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+/* ==================== 12. РАЗДЕЛ "СОСТОЯНИЕ ЦЕХА" (3 КОЛОНКИ) ==================== */
+.floor-grid {
+  display: grid;
+  grid-template-columns: 1.35fr 1fr 1fr; /* склад шире, станки и покупатели по 1fr */
+  gap: 16px;
+  align-items: start;
+}
+
+.cells {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)); /* 12 ячеек склада = сетка 4x3 */
+  gap: 9px;
+}
+
+/* Пустая ячейка склада */
+.cell {
+  height: 62px;
+  border-radius: var(--r-sm);
+  border: 1px dashed var(--border-strong);
+  background: var(--surface-2);
+  color: var(--text-3);
+  font-size: 11.5px;
+  font-weight: 500;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+/* Занятая ячейка: цвет нижней рамки (--c) передаётся инлайново из JS под тип детали */
+.cell.full {
+  border-style: solid;
+  border-color: var(--border);
+  border-bottom: 3px solid var(--c, var(--blue));
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Зарезервированная ячейка (под деталь, которая сейчас делается на станке): диагональная штриховка */
+.cell.reserved {
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--surface-2) 0 6px,
+    var(--surface) 6px 12px
+  );
+  border-color: var(--border-strong);
+  color: var(--text-3);
+  font-size: 11px;
+}
+
+/* Цветной кружок (красный/зелёный/синий) для окрашенных корпусов и роботов */
+.cell .dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.state-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.state-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  font-size: 13px;
+}
+
+.badge {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-3);
+}
+
+.badge-ok {
+  background: var(--emerald-bg);
+  border-color: var(--emerald-border);
+  color: var(--emerald);
+}
+
+.badge-busy {
+  background: var(--blue-bg);
+  border-color: var(--blue-border);
+  color: var(--blue);
+}
+
+.badge-warn {
+  background: var(--amber-bg);
+  border-color: var(--amber-border);
+  color: var(--amber);
+}
+
+/* ==================== 13. ТАБЛИЦЫ И МОДЕЛЬ ПОКУПАТЕЛЕЙ ==================== */
+.table-wrap {
+  overflow-x: auto; /* горизонтальный скролл таблицы на узких экранах */
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+th, td {
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  white-space: nowrap;
+}
+
+th {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-3);
+  background: var(--surface-2);
+}
+
+tbody tr:hover td {
+  background: var(--surface-hover);
+}
+
+tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+/* Подсветка самой выгодной конфигурации робота для конкретного покупателя */
+td.best {
+  background: var(--emerald-bg);
+}
+
+td.best .p-num {
+  color: var(--emerald);
+  font-weight: 700;
+}
+
+.price-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 136px;
+}
+
+.price-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.p-num {
+  font-family: "JetBrains Mono", monospace;
+  font-weight: 600;
+}
+
+.p-rng {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  color: var(--text-3);
+}
+
+/* Полоска прогресса ожидаемой цены относительно Pmax */
+.price-bar {
+  height: 4px;
+  width: 100%;
+  border-radius: 999px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.price-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--blue);
+}
+
+td.best .price-bar > i {
+  background: var(--emerald);
+}
+
+/* Итоговые строки внизу таблицы модели (оценка vs истинные параметры) */
+.row-meta td {
+  background: var(--surface-2);
+  font-size: 12.5px;
+}
+
+.ok { color: var(--emerald); font-weight: 600; }
+.no { color: var(--red); font-weight: 600; }
+
+/* ==================== 14. ЖУРНАЛ СДЕЛОК И ФИЛЬТРЫ ==================== */
+.title-count {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-2);
+}
+
+.sales-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.tool-select {
+  width: auto;
+  min-width: 155px;
+  padding: 7px 10px;
+  font-size: 12.5px;
+  background: var(--surface);
+}
+
+/* Переключатель "Все / Продано / Отказы" */
+.segmented {
+  display: inline-flex;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 2px;
+}
+
+.seg {
+  padding: 5px 11px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-2);
+  font: 500 12.5px/1.2 "Inter", sans-serif;
+  cursor: pointer;
+}
+
+.seg:hover {
+  color: var(--text);
+}
+
+.seg.active {
+  background: var(--ink);
+  color: var(--ink-text);
+  font-weight: 600;
+}
+
+/* Плашки статуса сделки в таблице */
+.pill-ok {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--emerald-bg);
+  border: 1px solid var(--emerald-border);
+  color: var(--emerald);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.pill-no {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--red-bg);
+  border: 1px solid var(--red-border);
+  color: var(--red);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.sales-foot {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: center;
+}
+
+.sw {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  margin-right: 7px;
+  vertical-align: middle;
+}
+
+.empty-note {
+  margin: 0;
+  padding: 12px 0;
+  color: var(--text-3);
+  font-size: 13px;
+}
+
+/* ==================== 15. ВСПЛЫВАЮЩАЯ ПОДСКАЗКА (ТУЛТИП) ==================== */
+.tip {
+  position: fixed;
+  pointer-events: none; /* тултип не перехватывает события мыши, чтобы не мешать водить курсором по графику */
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-sm);
+  padding: 9px 12px;
+  font-size: 12px;
+  line-height: 1.55;
+  box-shadow: var(--shadow-md);
+  z-index: 40;
+}
+
+/* ==================== 16. АДАПТИВНОСТЬ (ПЛАНШЕТЫ И МОБИЛКИ) ==================== */
+@media (max-width: 1120px) {
+  .layout {
+    grid-template-columns: 1fr; /* убираем боковую колонку, сайдбар уезжает наверх */
+  }
+  .sidebar {
+    position: static;
+    height: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .nav {
+    flex-direction: row; /* вкладки выстраиваются в горизонтальную полосу */
+    flex-wrap: wrap;
+  }
+  .nav-item {
+    width: auto;
+  }
+  .kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)); /* 2 карточки в ряд вместо 4 */
+  }
+  .charts-grid,
+  .floor-grid {
+    grid-template-columns: 1fr; /* графики и колонки цеха в 1 столбец */
+  }
+}
+
+@media (max-width: 640px) {
+  .topbar {
+    padding: 0 14px;
+  }
+  .container {
+    padding: 16px 14px 40px;
+  }
+  .kpi-grid {
+    grid-template-columns: 1fr;
+  }
+  .section-head h1 {
+    font-size: 22px;
+  }
+  .run-pill {
+    display: none;
+  }
+}
